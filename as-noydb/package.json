@@ -1,0 +1,61 @@
+{
+  "name": "@noy-db/as-noydb",
+  "version": "0.7.1-pre.0",
+  "description": "Encrypted .noydb bundle export for noy-db — wraps writePod() with the RFC #249 canExportBundle authorization gate and ergonomic browser/node helpers. Sole member of the @noy-db/as-* encrypted tier — ciphertext in, ciphertext out.",
+  "license": "MIT",
+  "author": "vLannaAi <vicio@lanna.ai>",
+  "homepage": "https://github.com/noy-db/as/tree/main/as-noydb#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/noy-db/as.git",
+    "directory": "as-noydb"
+  },
+  "bugs": {
+    "url": "https://github.com/noy-db/as/issues"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@noy-db/hub": "^0.7.0 || ^0.7.1-pre.0"
+  },
+  "devDependencies": {
+    "@noy-db/hub": "0.7.0",
+    "@noy-db/test-format-conformance": "0.7.0",
+    "@types/node": "^22.0.0",
+    "happy-dom": "^18.0.0"
+  },
+  "keywords": [
+    "noy-db",
+    "as-noydb",
+    "bundle",
+    "backup",
+    "encrypted",
+    "zero-knowledge"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "tag": "latest"
+  }
+}

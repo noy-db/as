@@ -1,0 +1,63 @@
+{
+  "name": "@noy-db/as-sql",
+  "version": "0.7.1-pre.0",
+  "description": "SQL dump export for noy-db — decrypts records and emits dialect-aware CREATE TABLE + INSERT statements for postgres / mysql / sqlite. One-way migration helper. Gated by `vault.assertCanExport('plaintext', …)`.",
+  "license": "MIT",
+  "author": "vLannaAi <vicio@lanna.ai>",
+  "homepage": "https://github.com/noy-db/as/tree/main/as-sql#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/noy-db/as.git",
+    "directory": "as-sql"
+  },
+  "bugs": {
+    "url": "https://github.com/noy-db/as/issues"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@noy-db/hub": "^0.7.0 || ^0.7.1-pre.0"
+  },
+  "devDependencies": {
+    "@noy-db/hub": "0.7.0",
+    "@noy-db/test-format-conformance": "0.7.0",
+    "@types/node": "^22.0.0",
+    "happy-dom": "^18.0.0"
+  },
+  "keywords": [
+    "noy-db",
+    "as-sql",
+    "sql",
+    "export",
+    "migration",
+    "postgres",
+    "mysql",
+    "sqlite"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "tag": "latest"
+  }
+}

@@ -1,0 +1,111 @@
+# Cross-tool archive interop for `as-zip`, on all three runner OSes.
+#
+# WHY THIS EXISTS HERE. noy-db's release workflow ran this, from
+# `packages/as-zip`, and that path left core with the `as-*` extraction on
+# 2026-09-01. Its v0.7.0 tag predated the extraction, so the first run that
+# could fail was v0.7.1-pre.0 — which did, advisorily, because the job was
+# `continue-on-error: true`. noy-db has since dropped its copy (noy-db #1331),
+# so cross-OS archive interop is checked by nobody until this runs.
+#
+# ⚠️ WHY `NOYDB_INTEROP_REQUIRE` IS THE WHOLE POINT. The vectors skip
+# gracefully when `7z`/`7zz`/`unar` are absent — right on a developer machine,
+# wrong here. noy-db's job installed `unar` on macOS ONLY, so its Linux and
+# Windows legs silently skipped two of three blocks for as long as it existed:
+# a 3-OS matrix that was green while checking a third of what it claimed.
+# With the flag set, a missing tool FAILS and names itself. Porting the job
+# without the flag would port that hole with it.
+#
+# ⚠️ NOT `continue-on-error`. noy-db's was advisory, which is why its failure
+# went unnoticed for two days. Non-fatal and invisible are the same setting.
+name: Interop
+
+on:
+  pull_request:
+    paths: ['as-zip/**', '.github/workflows/interop.yml']
+  push:
+    branches: [main]
+    paths: ['as-zip/**', '.github/workflows/interop.yml']
+  workflow_call:
+    inputs:
+      ref:
+        description: 'Ref to check out — the release TAG, not the default branch'
+        required: false
+        type: string
+  workflow_dispatch:
+
+concurrency:
+  group: interop-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  interop:
+    name: Archive interop (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Enable corepack (pnpm)
+        run: corepack enable
+      - name: Get pnpm store path
+        id: pnpm-store
+        shell: bash
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v5
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      # `7z` on all three; `unar` on macOS only. That is the same SHAPE as the
+      # ported job's macOS-only unar, and the difference is that this one is a
+      # measured result rather than an oversight — run 33944815086, the first
+      # honest run of these vectors on three OSes:
+      #
+      #   ubuntu   unar installs, and every AES vector FAILS with "Archive
+      #            parsing failed! (Missing or wrong password.)" — on archives
+      #            macOS's unar reads fine. Same bytes, same code; Ubuntu's unar
+      #            cannot read WinZip-AES-256.
+      #   windows  `choco install unarchiver` does not exist. There is no unar.
+      #
+      # ⚠️ Do not "fix" this by installing unar on Linux: it will install, run,
+      # and fail. The finding belongs in the record, not in a red gate. When
+      # Ubuntu ships a unar that reads WinZip-AES, add it to that leg.
+      - name: Install 7-Zip (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y p7zip-full
+      - name: Install 7-Zip + unar (macOS)
+        if: runner.os == 'macOS'
+        run: brew install sevenzip unar
+      - name: Install 7-Zip (Windows)
+        if: runner.os == 'Windows'
+        run: choco install 7zip -y
+
+      # Printed so the claim above stays checkable as runner images move — the
+      # note says "Ubuntu's unar", and this is what says which one that was.
+      - name: Tool versions
+        shell: bash
+        continue-on-error: true
+        run: |
+          (7z i 2>/dev/null || 7zz i 2>/dev/null) | head -3 || echo "no 7z"
+          unar -v 2>/dev/null | head -2 || echo "unar: not installed on this OS"
+
+      # Fails, naming the tool, if a REQUIRED one is missing — see the header.
+      - name: Run interop vectors
+        working-directory: as-zip
+        env:
+          NOYDB_INTEROP_REQUIRE: ${{ runner.os == 'macOS' && '7z,unar' || '7z' }}
+        run: pnpm vitest run __tests__/interop.test.ts --reporter=verbose
