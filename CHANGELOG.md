@@ -11,6 +11,33 @@ which is the opposite of hub's situation.
 
 ## Unreleased
 
+## 0.8.0-pre.0
+
+Relicensed from MIT to Apache-2.0 from this version on. Earlier versions remain MIT.
+
+Binds `@noy-db/hub@0.8.0-pre.0`.
+
+### Licence
+
+- Every package is now **Apache-2.0**, and each ships `LICENSE` and `NOTICE` in
+  its tarball. ⚠️ The `0.7.0` tarballs listed `LICENSE` in `files` but no such
+  file existed in any package directory, so they shipped with **no licence text
+  at all** — a manifest field is not a file. Both are present and verified by
+  the `check-license` gate from this version on.
+
+### Versions
+
+- The hub peer range is **widened by appending**: `^0.7.0 || ^0.7.1-pre.0 ||
+  ^0.8.0-pre.0`. The exact dev pins on `@noy-db/hub`, `@noy-db/to-memory` and
+  `@noy-db/test-format-conformance` move to `0.8.0-pre.0` as one unit.
+- `as-xlsx`'s peer on `as-zip` narrows to `^0.8.0-pre.0` — the line is lockstep
+  and a 0.7 `as-zip` does not bind the 0.8 hub seam. Its **devDependency** is
+  `^0.7.0 || ^0.8.0-pre.0`: the caret-from-the-registry property this repo
+  relies on cannot bootstrap a version that is not published yet, so the
+  published floor stays admissible until `0.8.0-pre.0` is on npm.
+- `0.7.1-pre.0` never reached public npm — it exists in this repo's line and on
+  the org `@dev` registry only. Everything under it below ships here.
+
 ### Published surface
 
 - ⚠️ **`numberFormats` now applies in every mode, not only smart mode**
