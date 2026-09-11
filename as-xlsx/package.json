@@ -46,7 +46,7 @@
     "fast-xml-parser": "^5.0.0"
   },
   "devDependencies": {
-    "@noy-db/as-zip": "^0.7.0 || ^0.8.0-pre.0",
+    "@noy-db/as-zip": "^0.8.0-pre.0",
     "@noy-db/hub": "0.8.0-pre.0",
     "@noy-db/test-format-conformance": "0.8.0-pre.0",
     "@noy-db/to-memory": "0.8.0-pre.0",
