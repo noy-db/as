@@ -1,6 +1,6 @@
 {
   "name": "@noy-db/as-json",
-  "version": "0.8.0-pre.0",
+  "version": "0.8.0",
   "description": "Structured JSON plaintext export for noy-db — decrypts records and emits one JSON document per vault. Gated by `vault.assertCanExport('plaintext', …)` capability; writes an audit-ledger entry on every call. Part of the @noy-db/as-* portable-artefact family (plaintext tier).",
   "license": "Apache-2.0",
   "author": "vLannaAi <vicio@lanna.ai>",
@@ -42,8 +42,8 @@
     "@noy-db/hub": "^0.7.0 || ^0.7.1-pre.0 || ^0.8.0-pre.0"
   },
   "devDependencies": {
-    "@noy-db/hub": "0.8.0-pre.0",
-    "@noy-db/test-format-conformance": "0.8.0-pre.0",
+    "@noy-db/hub": "0.8.0",
+    "@noy-db/test-format-conformance": "0.8.0",
     "@types/node": "^22.0.0",
     "happy-dom": "^18.0.0"
   },

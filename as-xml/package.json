@@ -1,6 +1,6 @@
 {
   "name": "@noy-db/as-xml",
-  "version": "0.8.0-pre.0",
+  "version": "0.8.0",
   "description": "XML plaintext export for noy-db — decrypts records and formats as XML with RFC-compliant entity escaping. For legacy systems, banking batch imports, SOAP endpoints, and accounting software that requires XML. Gated by `vault.assertCanExport('plaintext', …)`.",
   "license": "Apache-2.0",
   "author": "vLannaAi <vicio@lanna.ai>",
@@ -45,8 +45,8 @@
     "fast-xml-parser": "^5.0.0"
   },
   "devDependencies": {
-    "@noy-db/hub": "0.8.0-pre.0",
-    "@noy-db/test-format-conformance": "0.8.0-pre.0",
+    "@noy-db/hub": "0.8.0",
+    "@noy-db/test-format-conformance": "0.8.0",
     "@types/node": "^22.0.0",
     "happy-dom": "^18.0.0"
   },

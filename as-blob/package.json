@@ -1,6 +1,6 @@
 {
   "name": "@noy-db/as-blob",
-  "version": "0.8.0-pre.0",
+  "version": "0.8.0",
   "description": "Single-attachment plaintext export for noy-db — extracts one blob from BlobSet as native MIME bytes. Gated by the RFC #249 `assertCanExport('plaintext', …)` gate; writes an audit-ledger entry on every call. Part of the @noy-db/as-* portable-artefact family (plaintext tier, document sub-family).",
   "license": "Apache-2.0",
   "author": "vLannaAi <vicio@lanna.ai>",
@@ -42,9 +42,9 @@
     "@noy-db/hub": "^0.7.0 || ^0.7.1-pre.0 || ^0.8.0-pre.0"
   },
   "devDependencies": {
-    "@noy-db/hub": "0.8.0-pre.0",
-    "@noy-db/test-format-conformance": "0.8.0-pre.0",
-    "@noy-db/to-memory": "0.8.0-pre.0",
+    "@noy-db/hub": "0.8.0",
+    "@noy-db/test-format-conformance": "0.8.0",
+    "@noy-db/to-memory": "0.8.0",
     "@types/node": "^22.0.0",
     "happy-dom": "^18.0.0"
   },
