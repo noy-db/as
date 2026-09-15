@@ -212,20 +212,53 @@ describe('entry mod-time consistency', () => {
     expect(centralDirectoryTimes(first)).toEqual([(8 << 11) | (30 << 5), (8 << 11) | (30 << 5)])
   })
 
+  const STABILITY_ENTRIES: ZipEntry[] = [
+    { path: 'a.txt', bytes: new TextEncoder().encode('alpha') },
+    { path: 'nested/b.bin', bytes: new Uint8Array([0xde, 0xad, 0xbe, 0xef]) },
+  ]
+
+  /**
+   * 40 builds, under a clock that advances 4s per build.
+   *
+   * The COUNT alone buys nothing here, and that is the whole point.
+   * Repetition is a probe only if something changes across the repeats:
+   * 40 builds in a tight loop all land in the same 2-second DOS bucket,
+   * so a writer that ignored `options.mtime` entirely would still emit
+   * one digest and this would pass green. The advancing clock is the
+   * varying axis; the count is what makes a rare divergence loud once
+   * an axis exists.
+   *
+   * Measured elsewhere, not theorised: a consumer's guard over exactly
+   * this property ran 40 builds of a real workbook through a full
+   * strategy stack and slept through the regression it was written for
+   * — the stack varied plenty, none of it reached the ZIP header.
+   * ⛔ Do not simplify this to a bare loop, and do not assume a busier
+   * fixture supplies the variation. CHECK WHICH AXIS VARIES.
+   */
   it('emits one archive across many builds when options.mtime is fixed', async () => {
-    // 40, not 2 — see the BUILDS note in as-xlsx's determinism suite: a
-    // consumer's one-in-four reproducibility defect survived a
-    // single-rebuild assertion for weeks by reading as suite flake.
-    const entries: ZipEntry[] = [
-      { path: 'a.txt', bytes: new TextEncoder().encode('alpha') },
-      { path: 'nested/b.bin', bytes: new Uint8Array([0xde, 0xad, 0xbe, 0xef]) },
-    ]
     const mtime = new Date(0)
-    const digests = new Set<string>()
-    for (let i = 0; i < 40; i++) {
-      digests.add(Buffer.from(await writeZip(entries, { mtime })).toString('base64'))
-    }
+    const digests = await withAdvancingClock(4000, async () => {
+      const seen = new Set<string>()
+      for (let i = 0; i < 40; i++) {
+        seen.add(Buffer.from(await writeZip(STABILITY_ENTRIES, { mtime })).toString('base64'))
+      }
+      return seen
+    })
     expect(digests.size).toBe(1)
+  })
+
+  it('emits many archives across the same builds when options.mtime is absent', async () => {
+    // The paired non-vacuity check: proves the clock really moved
+    // across the run above, so the step cannot be quietly reduced to
+    // nothing without a test going red.
+    const digests = await withAdvancingClock(4000, async () => {
+      const seen = new Set<string>()
+      for (let i = 0; i < 40; i++) {
+        seen.add(Buffer.from(await writeZip(STABILITY_ENTRIES)).toString('base64'))
+      }
+      return seen
+    })
+    expect(digests.size).toBeGreaterThan(1)
   })
 
   it('lets a per-entry mtime override the archive-wide one', async () => {
