@@ -21,12 +21,24 @@ import { formula, styled, writeXlsx, type XlsxSheet } from '../src/index.js'
 /**
  * Build count for the stability tests.
  *
- * Not 2. A consumer hit a reproducibility defect that reproduced about
- * one run in FOUR; their single-rebuild assertion caught it roughly a
- * quarter of the time and read as suite flake for weeks. At 40 builds a
- * one-in-four divergence escapes with probability (3/4)^39 — about one
- * in 77,000 — so this fails loudly instead of intermittently. Match
- * that bar rather than the cheaper number.
+ * Not 2 — a consumer's reproducibility defect reproduced about one run
+ * in FOUR, so their single-rebuild assertion caught it a quarter of the
+ * time and read as suite flake for weeks. With a varying axis present,
+ * 40 builds drop a one-in-four escape to (3/4)^39, about one in 77,000.
+ *
+ * ⛔ THE COUNT IS THE SECOND HALF, NEVER THE FIRST. Repetition is a
+ * probe only if something CHANGES across the repeats, and which axis
+ * varies has to be checked rather than assumed. Both measured, not
+ * argued: 40 builds of this writer in a tight loop all land in one
+ * 2-second DOS bucket, and so do 40 builds of a real workbook through a
+ * full strategy stack with a seeded vault and live formulas — that
+ * consumer's own guard ran at this count and slept through the exact
+ * regression it was written for, because the stack varied plenty and
+ * none of it reached the ZIP header. A busier fixture is not a varying
+ * axis.
+ *
+ * So every loop below runs under `withAdvancingClock`, and every one
+ * has a paired assertion that the clock really moved.
  */
 const BUILDS = 40
 
