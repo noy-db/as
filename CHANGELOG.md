@@ -11,6 +11,42 @@ which is the opposite of hub's situation.
 
 ## Unreleased
 
+### Reproducible output (#2)
+
+- `writeXlsx(sheets, { mtime })` and `writeZip(entries, { mtime })` fix the
+  mod-time stamped on every entry, making the output **byte-reproducible**. The
+  default is unchanged — the call-time clock — so this is opt-in.
+
+  A ZIP stores mod-time at MS-DOS **2-second** granularity, so identical input
+  previously produced identical bytes only while two builds landed in the same
+  2-second bucket. ⚠️ **A back-to-back check passes**, which is why this
+  surfaces as a flaky digest much later rather than as an obvious defect.
+  `new Date(0)` clamps to the DOS epoch (1980-01-01), in both the local headers
+  and the central directory.
+
+- ⛔ **Rolling `as-xlsx` back below this version leaves `{ mtime }` COMPILING
+  and SILENTLY IGNORED.** An options bag cannot refuse an unknown key, so an
+  older reader takes the call, returns to the wall clock for every ZIP header,
+  and every attested digest stops reproducing — with no error, no type error,
+  and a workbook that still opens. A consumer pinning back for an unrelated
+  reason would not connect the two. Nothing here can fix it; the only thing
+  that catches it is a determinism test whose clock actually moves.
+
+- `writeZip` now reads the clock **once per archive** instead of once per
+  entry. Read per entry, a write straddling a 2-second bucket stamped its own
+  entries inconsistently — the archive disagreed with itself about when it was
+  made, and nothing reported it. Unconditional, no opt-in.
+
+- ⭐ Verified byte-identical to a hand-written central-directory post-processor
+  on a real 8-sheet, 122 KB attested workbook with cached formulas, Thai text
+  and styled numerics, against the version actually shipped rather than against
+  the new build. A control run without `mtime` differs, so the comparison could
+  have failed.
+
+- Not covered: `as-zip`'s own manifest `exportedAt` is the same class of defect
+  at millisecond resolution — tracked as #4.
+
+
 ## 0.8.0-pre.0
 
 Relicensed from MIT to Apache-2.0 from this version on. Earlier versions remain MIT.
