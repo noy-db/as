@@ -212,6 +212,22 @@ describe('entry mod-time consistency', () => {
     expect(centralDirectoryTimes(first)).toEqual([(8 << 11) | (30 << 5), (8 << 11) | (30 << 5)])
   })
 
+  it('emits one archive across many builds when options.mtime is fixed', async () => {
+    // 40, not 2 — see the BUILDS note in as-xlsx's determinism suite: a
+    // consumer's one-in-four reproducibility defect survived a
+    // single-rebuild assertion for weeks by reading as suite flake.
+    const entries: ZipEntry[] = [
+      { path: 'a.txt', bytes: new TextEncoder().encode('alpha') },
+      { path: 'nested/b.bin', bytes: new Uint8Array([0xde, 0xad, 0xbe, 0xef]) },
+    ]
+    const mtime = new Date(0)
+    const digests = new Set<string>()
+    for (let i = 0; i < 40; i++) {
+      digests.add(Buffer.from(await writeZip(entries, { mtime })).toString('base64'))
+    }
+    expect(digests.size).toBe(1)
+  })
+
   it('lets a per-entry mtime override the archive-wide one', async () => {
     const entries: ZipEntry[] = [
       { path: 'a.txt', bytes: new TextEncoder().encode('alpha') },

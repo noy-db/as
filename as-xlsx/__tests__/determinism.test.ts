@@ -15,7 +15,22 @@
  * case would still pass if the clock stub silently stopped moving.
  */
 import { describe, expect, it } from 'vitest'
-import { writeXlsx, type XlsxSheet } from '../src/index.js'
+import { createHash } from 'node:crypto'
+import { formula, styled, writeXlsx, type XlsxSheet } from '../src/index.js'
+
+/**
+ * Build count for the stability tests.
+ *
+ * Not 2. A consumer hit a reproducibility defect that reproduced about
+ * one run in FOUR; their single-rebuild assertion caught it roughly a
+ * quarter of the time and read as suite flake for weeks. At 40 builds a
+ * one-in-four divergence escapes with probability (3/4)^39 — about one
+ * in 77,000 — so this fails loudly instead of intermittently. Match
+ * that bar rather than the cheaper number.
+ */
+const BUILDS = 40
+
+const sha = (b: Uint8Array) => createHash('sha256').update(b).digest('hex')
 
 const SHEETS: XlsxSheet[] = [{ name: 'S', header: ['a', 'b'], rows: [['1', '2'], ['3', '4']] }]
 
@@ -72,5 +87,67 @@ describe('writeXlsx byte reproducibility', () => {
     const a = await withAdvancingClock(4000, () => writeXlsx(SHEETS, { mtime }))
     const b = await withAdvancingClock(60_000, () => writeXlsx(SHEETS, { mtime }))
     expect(Buffer.from(a).equals(Buffer.from(b))).toBe(true)
+  })
+})
+
+describe('writeXlsx stability across repeated builds', () => {
+  /**
+   * Formula-bearing, in both computed sheets, with and without cached
+   * values — `formula()` emits `<f>` plus an optional `<v>`, XML the
+   * flat fixture above never produces.
+   */
+  const RICH: XlsxSheet[] = [
+    {
+      name: 'Ledger',
+      header: ['id', 'client', 'amount', 'vat'],
+      rows: [
+        ['inv-1', 'Globex', 1500, formula('C2*0.07', 105)],
+        ['inv-2', 'Acme, Inc.', 2400, formula('C3*0.07', 168)],
+        ['inv-3', 'สตาร์ค', 999, formula('C4*0.07')],
+      ],
+    },
+    {
+      name: 'Totals',
+      header: ['metric', 'value'],
+      rows: [
+        ['net', formula('SUM(Ledger!C2:C4)', 4899)],
+        ['vat', formula('SUM(Ledger!D2:D4)')],
+        ['gross', styled(5241.93, '#,##0.00')],
+        ['note', 'ünïcødé & <xml> "quotes"'],
+      ],
+      widths: [20, 14],
+    },
+  ]
+
+  it('emits one digest across many builds when mtime is fixed', async () => {
+    // Run under the moving clock deliberately. Forty builds in a tight
+    // loop all land in the SAME 2-second bucket, so a writer that
+    // ignored `mtime` entirely would still emit one digest and this
+    // test would pass while proving nothing.
+    const mtime = new Date(0)
+    const digests = await withAdvancingClock(4000, async () => {
+      const seen = new Set<string>()
+      for (let i = 0; i < BUILDS; i++) seen.add(sha(await writeXlsx(RICH, { mtime })))
+      return seen
+    })
+    expect(digests.size).toBe(1)
+  })
+
+  it('emits more than one digest across the same builds when it is not', async () => {
+    // The paired negative: without it, a fixture that silently stopped
+    // exercising the writer would satisfy the test above forever.
+    const digests = await withAdvancingClock(4000, async () => {
+      const seen = new Set<string>()
+      for (let i = 0; i < BUILDS; i++) seen.add(sha(await writeXlsx(RICH)))
+      return seen
+    })
+    expect(digests.size).toBeGreaterThan(1)
+  })
+
+  it('actually exercises formula cells', async () => {
+    // Guards the two tests above: they are only meaningful while the
+    // fixture still emits the `<f>` XML that motivated it.
+    const bytes = await writeXlsx(RICH, { mtime: new Date(0) })
+    expect(Buffer.from(bytes).toString('latin1')).toContain('<f>')
   })
 })
