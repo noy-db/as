@@ -139,6 +139,30 @@ const bytes = writeXlsx([
 ])
 ```
 
+## Reproducible output
+
+By default every zip entry inside the workbook is stamped with the
+call-time clock. A ZIP stores mod-time at MS-DOS **2-second**
+granularity, so two builds of identical data produce identical bytes
+only while both land in the same 2-second bucket — a back-to-back check
+passes and the mismatch surfaces later as a flaky hash.
+
+Pass `mtime` to `writeXlsx` to fix the stamp and make the bytes
+reproducible. It affects timestamps only, never cell content:
+
+```ts
+import { writeXlsx } from '@noy-db/as-xlsx'
+
+const bytes = writeXlsx(
+  [{ name: 'Results', header: ['Name'], rows: [['Alice']] }],
+  { mtime: new Date(0) },
+)
+```
+
+Reach for this when the workbook is content-addressed — hashed as an
+attestation, then rebuilt later to check the digest still holds. The
+default is only *accidentally* reproducible.
+
 ## Not supported
 
 Pure data export — styles, formulas, merged cells, frozen panes,

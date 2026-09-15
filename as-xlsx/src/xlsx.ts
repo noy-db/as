@@ -124,7 +124,20 @@ export interface XlsxSheet {
  */
 export async function writeXlsx(
   sheets: readonly XlsxSheet[],
-  options: { definedNames?: ReadonlyArray<{ readonly name: string; readonly ref: string }> } = {},
+  options: {
+    definedNames?: ReadonlyArray<{ readonly name: string; readonly ref: string }>
+    /**
+     * Mod-time stamped on every zip entry. Defaults to the call-time
+     * clock; set it to make the output byte-reproducible (as#2).
+     *
+     * A ZIP stores mod-time at MS-DOS 2-second granularity, so without
+     * this two builds of identical input match only while both land in
+     * the same 2-second bucket — a back-to-back check passes and the
+     * failure surfaces later as a flaky hash. Pass a fixed value when
+     * content-addressing the workbook.
+     */
+    mtime?: Date
+  } = {},
 ): Promise<Uint8Array> {
   if (sheets.length === 0) {
     throw new Error('writeXlsx: at least one sheet is required')
@@ -330,7 +343,20 @@ export async function writeXlsx(
     ...sheetEntries.map((s, i) => ({ path: s.path, bytes: ENCODER.encode(sheetXmls[i] ?? '') })),
   ]
 
-  return await writeZip(entries)
+  // Stamped PER ENTRY, not via `writeZip`'s archive-wide `mtime`.
+  // `ZipEntry.mtime` is in as-zip's PUBLISHED surface; the archive-wide
+  // option is not published yet, and as-xlsx resolves as-zip from the
+  // REGISTRY (caret peer, deliberately — it proves published
+  // compatibility on every run). Reaching for the newer option here
+  // would not compile against the floor. Switch this over only once a
+  // published as-zip carries it.
+  // Destructured first: under `exactOptionalPropertyTypes`, narrowing
+  // `options.mtime` does not survive into the closure, so the spread
+  // would widen back to `Date | undefined` and fail the DTS build.
+  const { mtime } = options
+  const stamped: ZipEntry[] = mtime === undefined ? entries : entries.map((e) => ({ ...e, mtime }))
+
+  return await writeZip(stamped)
 }
 
 // ── Cell emission ─────────────────────────────────────────────────
