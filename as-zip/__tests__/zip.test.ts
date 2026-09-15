@@ -121,3 +121,104 @@ describe('writeZip', () => {
     expect(uncompressedSize).toBe(payload.length)
   })
 })
+
+describe('entry mod-time consistency', () => {
+  /**
+   * Read every entry's DOS mod-time out of the central directory.
+   *
+   * The central directory is walked rather than the local headers
+   * scanned, because a scan for the local-header signature can hit the
+   * same four bytes inside stored payload data. EOCD is the last 22
+   * bytes when the archive carries no comment, which `writeZip` never
+   * emits.
+   */
+  function centralDirectoryTimes(bytes: Uint8Array): number[] {
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+    const eocd = bytes.length - 22
+    expect(view.getUint32(eocd, true)).toBe(0x06054b50)
+    const count = view.getUint16(eocd + 10, true)
+    let at = view.getUint32(eocd + 16, true)
+
+    const times: number[] = []
+    for (let i = 0; i < count; i++) {
+      expect(view.getUint32(at, true)).toBe(0x02014b50)
+      times.push(view.getUint16(at + 12, true))
+      const nameLen = view.getUint16(at + 28, true)
+      const extraLen = view.getUint16(at + 30, true)
+      const commentLen = view.getUint16(at + 32, true)
+      at += 46 + nameLen + extraLen + commentLen
+    }
+    return times
+  }
+
+  /**
+   * Run `fn` with `new Date()` advancing by `stepMs` on every
+   * construction, so a caller that reads the clock once per entry gets a
+   * different answer each time. Explicit-argument construction is left
+   * alone — only the zero-argument "now" form moves.
+   */
+  async function withAdvancingClock<T>(stepMs: number, fn: () => Promise<T>): Promise<T> {
+    const Real = Date
+    let now = Real.parse('2026-09-13T10:00:00Z')
+    class Advancing extends Real {
+      constructor(...args: ConstructorParameters<typeof Date>) {
+        if (args.length === 0) {
+          super(now)
+          now += stepMs
+        } else {
+          super(...args)
+        }
+      }
+      static now(): number {
+        return now
+      }
+    }
+    globalThis.Date = Advancing as DateConstructor
+    try {
+      return await fn()
+    } finally {
+      globalThis.Date = Real
+    }
+  }
+
+  it('stamps every entry in one archive with the same mod-time', async () => {
+    const entries: ZipEntry[] = [
+      { path: 'a.txt', bytes: new TextEncoder().encode('alpha') },
+      { path: 'b.txt', bytes: new TextEncoder().encode('bravo') },
+      { path: 'c.txt', bytes: new TextEncoder().encode('charlie') },
+    ]
+
+    // 4s per construction — two DOS buckets, so a per-entry clock read
+    // is guaranteed to produce three different stamps.
+    const bytes = await withAdvancingClock(4000, () => writeZip(entries))
+
+    const times = centralDirectoryTimes(bytes)
+    expect(times).toHaveLength(3)
+    expect(new Set(times).size).toBe(1)
+  })
+
+  it('uses options.mtime for every entry, ignoring the clock', async () => {
+    const entries: ZipEntry[] = [
+      { path: 'a.txt', bytes: new TextEncoder().encode('alpha') },
+      { path: 'b.txt', bytes: new TextEncoder().encode('bravo') },
+    ]
+    const mtime = new Date('1998-06-15T08:30:00Z')
+
+    const first = await withAdvancingClock(4000, () => writeZip(entries, { mtime }))
+    const second = await withAdvancingClock(4000, () => writeZip(entries, { mtime }))
+
+    expect(Buffer.from(first).equals(Buffer.from(second))).toBe(true)
+    // 08:30:00 → (8 << 11) | (30 << 5) | 0
+    expect(centralDirectoryTimes(first)).toEqual([(8 << 11) | (30 << 5), (8 << 11) | (30 << 5)])
+  })
+
+  it('lets a per-entry mtime override the archive-wide one', async () => {
+    const entries: ZipEntry[] = [
+      { path: 'a.txt', bytes: new TextEncoder().encode('alpha') },
+      { path: 'b.txt', bytes: new TextEncoder().encode('bravo'), mtime: new Date('1998-06-15T09:00:00Z') },
+    ]
+    const bytes = await writeZip(entries, { mtime: new Date('1998-06-15T08:30:00Z') })
+
+    expect(centralDirectoryTimes(bytes)).toEqual([(8 << 11) | (30 << 5), 9 << 11])
+  })
+})

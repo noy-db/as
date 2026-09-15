@@ -75,6 +75,21 @@ export interface WriteZipOptions {
    * the API.
    */
   readonly password?: string
+  /**
+   * Mod-time stamped on every entry that does not carry its own
+   * `mtime`. Defaults to the call-time clock.
+   *
+   * Set it to make the output byte-reproducible: a ZIP stores mod-time
+   * at MS-DOS 2-second granularity, so identical input otherwise
+   * produces identical bytes only while two writes land in the same
+   * 2-second bucket. Callers content-addressing the archive (hashing
+   * the bytes as an attestation) need a fixed value here — the default
+   * is only ACCIDENTALLY reproducible, and a back-to-back check passes.
+   *
+   * Years before 1980 clamp to the DOS epoch, so `new Date(0)` is a
+   * valid choice and lands on 1980-01-01.
+   */
+  readonly mtime?: Date
 }
 
 /**
@@ -97,9 +112,15 @@ export async function writeZip(
   const cdParts: Uint8Array[] = []
   let offset = 0
 
+  // Read the clock ONCE for the whole archive. Read per entry, a write
+  // that straddles a DOS 2-second bucket stamps its own entries
+  // inconsistently — the archive then disagrees with itself about when
+  // it was made, and nothing reports it.
+  const writeTime = options.mtime ?? new Date()
+
   for (const entry of entries) {
     const nameBytes = TEXT_ENCODER.encode(entry.path)
-    const dosTime = toDosTime(entry.mtime ?? new Date())
+    const dosTime = toDosTime(entry.mtime ?? writeTime)
 
     let dataBytes: Uint8Array
     let extraField: Uint8Array

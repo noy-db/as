@@ -183,6 +183,24 @@ const bytes = writeZip([
 STORE method (no compression). Single-disk, no Zip64. Files > 4 GiB
 are not supported.
 
+Entry mod-times default to the call-time clock, read **once** per
+archive so every entry agrees. A ZIP stores mod-time at MS-DOS
+2-second granularity, so identical input gives identical bytes only
+while two writes land in the same 2-second bucket. Pass `mtime` — per
+entry, or archive-wide — to make the output byte-reproducible:
+
+```ts
+import { writeZip } from '@noy-db/as-zip'
+
+const bytes = writeZip(
+  [{ path: 'hello.txt', bytes: new TextEncoder().encode('hi') }],
+  { mtime: new Date(0) },
+)
+```
+
+A per-entry `mtime` overrides the archive-wide one. Years before 1980
+clamp to the DOS epoch.
+
 ## Related
 
 - `@noy-db/as-blob` — single attachment
