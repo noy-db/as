@@ -120,4 +120,4 @@ All share the same authorization model; see [`docs/packages-exports.md#authoriza
 
 ## License
 
-MIT
+Apache-2.0
