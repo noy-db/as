@@ -103,13 +103,16 @@ runFormatConformanceTests('as-csv', {
   // would catch a wrapper bypassing the gate by calling exportStream directly.
   exports: [
     { name: 'vault.export(asCsv())', run: (vault) => vault.export(asCsv(), { collections: ['invoices'] }) },
-    { name: 'download', run: (vault) => download(vault, { collection: 'invoices' }) },
-    { name: 'write', run: (vault) => write(vault, '/tmp/conformance.csv', { collection: 'invoices', acknowledgeRisks: true }) },
+    { name: 'download', run: (vault) => download(vault, { collections: ['invoices'] }) },
+    { name: 'write', run: (vault) => write(vault, '/tmp/conformance.csv', { collections: ['invoices'], acknowledgeRisks: true }) },
   ],
   // NEVER covered before #1209 — the old fixture gated exports only.
   imports: [
     { name: 'vault.import(asCsv())', run: (vault) => vault.import(asCsv(), CSV, { collection: 'invoices' }) },
   ],
   writeWithoutAcknowledgement: (vault, path) =>
-    write(vault, path, { collection: 'invoices' } as Parameters<typeof write>[2]),
+    // Deliberately invalid: `acknowledgeRisks` omitted, which is what this
+    // probe exists to refuse. Two-step cast because the shapes genuinely do
+    // not overlap — that non-overlap is the thing under test.
+    write(vault, path, { collections: ['invoices'] } as unknown as Parameters<typeof write>[2]),
 })
