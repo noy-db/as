@@ -3,8 +3,19 @@
   "manager": "pnpm",
   "binds": "@noy-db/hub/as",
   "publishes": true,
-  "gates": ["architecture", "versions-uniform", "declared-deps", "codemod-rows", "check-license"],
-  "localChecks": ["pnpm check:prose-examples"],
-  "exempt": ["as-aws-s3"],
+  "gates": [
+    "architecture",
+    "versions-uniform",
+    "declared-deps",
+    "codemod-rows",
+    "check-license"
+  ],
+  "localChecks": [
+    "pnpm check:prose-examples",
+    "pnpm check:typecheck-tests"
+  ],
+  "exempt": [
+    "as-aws-s3"
+  ],
   "conformanceKit": "runFormatConformanceTests"
 }

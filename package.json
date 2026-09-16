@@ -6,6 +6,7 @@
   "scripts": {
     "build": "pnpm -r build",
     "check:prose-examples": "node scripts/check-prose-examples.mjs",
+    "check:typecheck-tests": "node scripts/typecheck-tests.mjs",
     "lint": "pnpm -r lint",
     "test": "vitest run",
     "typecheck": "pnpm -r typecheck",

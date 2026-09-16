@@ -24,7 +24,7 @@ vi.mock('@aws-sdk/client-s3', async (importOriginal) => {
     S3Client: class extends actual.S3Client {
       constructor(config: Record<string, unknown>) {
         capturedConfigs.push(config)
-        super(config as ConstructorParameters<typeof actual.S3Client>[0])
+        super(config as NonNullable<ConstructorParameters<typeof actual.S3Client>[0]>)
       }
     },
   }

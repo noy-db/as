@@ -218,7 +218,7 @@ describe('as-json fromString — apply stamps `reason: "import:json"` on every l
 describe('as-json fromString — error surfaces', () => {
   it('rejects malformed JSON with a clear message', async () => {
     const { db, vault } = await setup()
-    await expect(vault.import(asJson(), '{ not valid json'), {}).rejects.toThrow(/not valid JSON/)
+    await expect(vault.import(asJson(), '{ not valid json', {})).rejects.toThrow(/not valid JSON/)
     db.close()
   })
 
