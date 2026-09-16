@@ -12,7 +12,6 @@
     "prose-examples"
   ],
   "localChecks": [
-    "pnpm check:prose-examples",
     "pnpm check:typecheck-tests"
   ],
   "exempt": [
