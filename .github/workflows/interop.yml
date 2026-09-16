@@ -1,3 +1,4 @@
+# family: local-by-decision — three non-interchangeable per-OS tool installs and the measured reason not to "fix" ubuntu's unar; one caller; the value is the inline reasoning (as#8, ruled 2026-09-16)
 # Cross-tool archive interop for `as-zip`, on all three runner OSes.
 #
 # WHY THIS EXISTS HERE. noy-db's release workflow ran this, from
