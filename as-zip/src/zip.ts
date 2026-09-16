@@ -66,9 +66,16 @@ export interface ZipEntry {
 export interface WriteZipOptions {
   /**
    * When set, every entry is encrypted with WinZip-AES-256 sealed
-   * under this secret. Recipients open with stock archive
-   * tooling (7-Zip, Archive Utility, WinRAR, modern unzip builds)
-   * by typing the same secret.
+   * under this secret. Recipients open it by typing the same secret.
+   *
+   * ⚠️ **Not every tool can.** 7-Zip is verified on Linux, macOS and
+   * Windows; macOS's `unar` reads these archives too. Some
+   * distro-packaged `unar` builds cannot read WinZip-AES-256 —
+   * measured on `ubuntu-latest`, 2026-09-05, run 33944815086, where
+   * every vector failed with *"Missing or wrong password"* on bytes
+   * 7-Zip opens everywhere. The limit is in that build, not in the
+   * archive. Name the tool, the platform and the date before widening
+   * this claim.
    *
    * Single secret across all entries by design — per-entry
    * passwords don't fit a noy-db export workflow and would muddy
