@@ -58,6 +58,28 @@ which is the opposite of hub's situation.
   required field; nothing changes for readers.
 
 
+## 0.8.0
+
+**No source change.** Measured, not recalled: `git diff v0.8.0-pre.0..v0.8.0 --
+'as-*/src'` is empty. This release is a version-and-pinning event — the stable
+cut of the 0.8.0-pre.0 line, whose notes are below and describe everything these
+packages actually do differently.
+
+- All ten packages move `0.8.0-pre.0` → `0.8.0`.
+- Exact dev pins follow core's line to stable: `@noy-db/hub`,
+  `@noy-db/to-memory` and `@noy-db/test-format-conformance` at `0.8.0`.
+- `as-xlsx`'s `as-zip` devDependency collapses to a single caret, the bootstrap
+  append from the pre-release cut having been spent once `as-zip@0.8.0-pre.0`
+  was published.
+- **`peerDependencies` are untouched** — the hub range already carried
+  `^0.8.0-pre.0`, which a caret satisfies at `0.8.0`. No consumer's resolution
+  changes.
+
+⚠️ This section exists because it was missing. The rail's CHANGELOG predicate
+had no end anchor, so `## 0.8.0-pre.0` satisfied the check for `0.8.0` and the
+stable cut went out green with no stable section, here and in 56 of 58 package
+changelogs family-wide. Gate anchored in noy-db/.github#16.
+
 ## 0.8.0-pre.0
 
 Relicensed from MIT to Apache-2.0 from this version on. Earlier versions remain MIT.
