@@ -56,7 +56,10 @@ async function withAdvancingClock<T>(stepMs: number, fn: () => Promise<T>): Prom
   const Real = Date
   let now = Real.parse('2026-09-13T10:00:00Z')
   class Advancing extends Real {
-    constructor(...args: ConstructorParameters<typeof Date>) {
+    // `ConstructorParameters<typeof Date>` resolves to ONE overload, so TS
+    // reads the zero-arg branch below as unreachable (TS2367). The union
+    // states what is actually passed.
+    constructor(...args: ConstructorParameters<typeof Date> | []) {
       if (args.length === 0) {
         super(now)
         now += stepMs
