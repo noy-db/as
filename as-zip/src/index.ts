@@ -93,6 +93,27 @@ export interface AsZipOptions<T = unknown> {
   readonly records: AsZipRecordsOptions<T>
   readonly attachments?: AsZipAttachmentsOptions
   /**
+   * The time this archive claims it was made. Defaults to the
+   * call-time clock. Sets BOTH the manifest's `exportedAt` and the
+   * mod-time on every zip entry — one value, because they are one
+   * fact, and because pinning only one of them leaves the archive
+   * non-reproducible with nothing to warn you.
+   *
+   * Set it to make the output byte-reproducible (#4), which a caller
+   * content-addressing the archive needs. Two values reach the bytes
+   * on every export and they fail differently: entry mod-times are
+   * MS-DOS 2-second granular, so they are only ACCIDENTALLY
+   * reproducible and a back-to-back check passes; `exportedAt` is an
+   * ISO string at millisecond precision and never matches twice.
+   *
+   * ⚠️ The two will not read alike for early dates. DOS has no years
+   * before 1980 and clamps, so `new Date(0)` gives an `exportedAt` of
+   * `1970-01-01T00:00:00.000Z` while the file dates show
+   * `1980-01-01`. Both are correct; they disagree because the formats
+   * do.
+   */
+  readonly mtime?: Date
+  /**
    * Optional WinZip-AES-256 secret. When set, every entry
    * inside the archive (records + attachments + manifest) is
    * encrypted with WinZip-AES-256 and the recipient must supply the
@@ -222,10 +243,12 @@ export async function toBytes<T = unknown>(vault: Vault, options: AsZipOptions<T
       }))
     return { id, attachments: attach }
   })
+  // Read once, used for both the manifest and every entry header.
+  const at = options.mtime ?? new Date()
   const manifest: ArchiveManifest = {
     _noydb_archive: 1,
     collection: collectionName,
-    exportedAt: new Date().toISOString(),
+    exportedAt: at.toISOString(),
     recordCount: records.length,
     attachmentCount: attachmentEntries.length,
     records: recordIndex,
@@ -255,7 +278,10 @@ export async function toBytes<T = unknown>(vault: Vault, options: AsZipOptions<T
     entries.push({ path: a.path, bytes: a.bytes })
   }
 
-  return writeZip(entries, options.password !== undefined ? { password: options.password } : {})
+  return writeZip(entries, {
+    ...(options.password !== undefined ? { password: options.password } : {}),
+    mtime: at,
+  })
 }
 
 /**

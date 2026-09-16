@@ -43,8 +43,19 @@ which is the opposite of hub's situation.
   the new build. A control run without `mtime` differs, so the comparison could
   have failed.
 
-- Not covered: `as-zip`'s own manifest `exportedAt` is the same class of defect
-  at millisecond resolution — tracked as #4.
+- `toBytes(vault, { mtime })` on **`as-zip`** makes a whole archive
+  byte-reproducible (#4). One option sets **both** the manifest's `exportedAt`
+  and every entry's mod-time — they are one fact, and pinning one without the
+  other leaves the archive non-reproducible with nothing to warn you.
+  `download()` and `write()` inherit it. Default unchanged: the call-time clock.
+
+  The two halves failed differently, which is why neither was noticed: entry
+  mod-times are 2-second granular and so were *accidentally* reproducible,
+  while `exportedAt` is millisecond-precision ISO and never matched twice.
+  ⚠️ They also do not read alike — `new Date(0)` gives `exportedAt`
+  `1970-01-01T00:00:00.000Z` against file dates of `1980-01-01`, because DOS
+  has no years before 1980 and clamps. `ArchiveManifest.exportedAt` stays a
+  required field; nothing changes for readers.
 
 
 ## 0.8.0-pre.0
