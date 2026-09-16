@@ -1,5 +1,14 @@
 # @noy-db/as-csv
 
+<!-- prose-preamble
+// Bindings the illustrative blocks below elide. Typed, not stubbed:
+// `declare` costs no runtime dependency, so the preamble cannot drift
+// from a fixture — and a wrong member call still fails the gate naming
+// the real type.
+import type { Vault } from '@noy-db/hub'
+declare const vault: Vault
+-->
+
 CSV plaintext export for noy-db — decrypts records from a single collection and formats them as comma-separated values with RFC 4180 escaping. Part of the `@noy-db/as-*` portable-artefact family (plaintext tier).
 
 The **reference implementation** of the plaintext-tier shape — every other record formatter in the family (`as-json`, `as-xml`, `as-sql`, …) follows the same 3-entry-point + authorization-gate structure.

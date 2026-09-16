@@ -1,5 +1,14 @@
 # @noy-db/as-xlsx
 
+<!-- prose-preamble
+// Bindings the illustrative blocks below elide. Typed, not stubbed:
+// `declare` costs no runtime dependency, so the preamble cannot drift
+// from a fixture — and a wrong member call still fails the gate naming
+// the real type.
+import type { Noydb } from '@noy-db/hub'
+declare const db: Noydb
+-->
+
 Excel spreadsheet plaintext export for noy-db. Produces a real
 `.xlsx` (Office Open XML) that opens natively in Excel, Numbers,
 LibreOffice Calc, and Google Sheets.
