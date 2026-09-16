@@ -1,5 +1,14 @@
 # @noy-db/as-zip
 
+<!-- prose-preamble
+// Bindings the illustrative blocks below elide. Typed, not stubbed:
+// `declare` costs no runtime dependency, so the preamble cannot drift
+// from a fixture — and a wrong member call still fails the gate naming
+// the real type.
+import type { Noydb } from '@noy-db/hub'
+declare const db: Noydb
+-->
+
 Composite record + blob archive for noy-db. Bundles a collection's
 records and every record's attached blobs into one `.zip` — the
 "download this audit trail" / "migrate this case folder" primitive.

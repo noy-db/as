@@ -1,5 +1,14 @@
 # @noy-db/as-blob
 
+<!-- prose-preamble
+// Bindings the illustrative blocks below elide. Typed, not stubbed:
+// `declare` costs no runtime dependency, so the preamble cannot drift
+// from a fixture — and a wrong member call still fails the gate naming
+// the real type.
+import type { Noydb } from '@noy-db/hub'
+declare const db: Noydb
+-->
+
 Single-attachment plaintext export for noy-db. Pulls one blob out of
 a record's `BlobSet` as its native MIME bytes — PDF, JPEG, `.eml`,
 anything you stored via `collection.blob(id).put(slot, bytes, …)`.
