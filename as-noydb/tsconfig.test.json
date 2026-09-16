@@ -1,0 +1,14 @@
+{
+  // Typechecks `__tests__` alongside `src`. The package tsconfig is
+  // `include: ["src"]` because that is what ships; tests are compiled
+  // here instead, in their OWN program, so a syntactic error in one
+  // test cannot make tsc abandon semantic checking for the package.
+  //
+  // ⚠️ `types` is named explicitly and must never be `[]` — that strips
+  // ambient globals, so a package correctly declaring `@types/node`
+  // cannot use `process` in a test. This package declares it; that is
+  // why "node" is listed.
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "rootDir": "..", "noEmit": true, "declaration": false, "declarationMap": false, "types": ["node"] },
+  "include": ["src", "__tests__"]
+}

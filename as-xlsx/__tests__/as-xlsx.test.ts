@@ -380,7 +380,9 @@ describe('#8 — numberFormats applies outside smart mode', () => {
       ],
     })
     // `readXlsx` rows are objects keyed by COLUMN LETTER, not arrays.
-    const rows = (await readXlsx(bytes)).sheets[0].rows
+    const [sheet] = (await readXlsx(bytes)).sheets
+    if (!sheet) throw new Error('readXlsx returned no sheets')
+    const rows = sheet.rows
     const byId = new Map(rows.slice(1).map((r) => [r.A, r.B]))
     expect(byId.get('a')).toBe(1234.56)
     expect(typeof byId.get('a')).toBe('number')
@@ -395,7 +397,9 @@ describe('#8 — numberFormats applies outside smart mode', () => {
       ],
     })
     // `readXlsx` rows are objects keyed by COLUMN LETTER, not arrays.
-    const rows = (await readXlsx(bytes)).sheets[0].rows
+    const [sheet] = (await readXlsx(bytes)).sheets
+    if (!sheet) throw new Error('readXlsx returned no sheets')
+    const rows = sheet.rows
     const byId = new Map(rows.slice(1).map((r) => [r.A, r.B]))
     expect(byId.get('b')).toBe('n/a')
     await db.close()
@@ -407,7 +411,9 @@ describe('#8 — numberFormats applies outside smart mode', () => {
       sheets: [{ name: 'M', collection: 'money', columns: ['id', 'amount'] }],
     })
     // `readXlsx` rows are objects keyed by COLUMN LETTER, not arrays.
-    const rows = (await readXlsx(bytes)).sheets[0].rows
+    const [sheet] = (await readXlsx(bytes)).sheets
+    if (!sheet) throw new Error('readXlsx returned no sheets')
+    const rows = sheet.rows
     const byId = new Map(rows.slice(1).map((r) => [r.A, r.B]))
     expect(byId.get('a')).toBe('1234.56')
     await db.close()

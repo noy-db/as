@@ -1,0 +1,16 @@
+{
+  // Typechecks `__tests__` alongside `src`. The package tsconfig is
+  // `include: ["src"]` because that is what ships; tests are compiled
+  // here instead, in their OWN program, so a syntactic error in one
+  // test cannot make tsc abandon semantic checking for the package.
+  //
+  // ⚠️ No `types` here, and never `types: []`. This package does not
+  // declare `@types/node` — naming it would typecheck against ambient
+  // globals the manifest does not own, which is the hazard the
+  // `declared-deps` gate exists to catch. If a test here needs `process`
+  // or another node global, the fix is to declare the dependency, not to
+  // widen this file.
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "rootDir": "..", "noEmit": true, "declaration": false, "declarationMap": false },
+  "include": ["src", "__tests__"]
+}

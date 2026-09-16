@@ -82,5 +82,8 @@ runFormatConformanceTests('as-xlsx', {
     { name: 'write', run: (vault) => write(vault, '/tmp/conformance.xlsx', { sheets: [{ name: 'invoices', collection: 'invoices' }], acknowledgeRisks: true }) },
   ],
   writeWithoutAcknowledgement: (vault, path) =>
-    write(vault, path, { sheets: [{ name: 'invoices', collection: 'invoices' }] } as Parameters<typeof write>[2]),
+    // Deliberately invalid: `acknowledgeRisks` is omitted, which is the
+    // whole point of this probe. Two-step cast because the shapes do not
+    // overlap — that non-overlap IS the thing under test.
+    write(vault, path, { sheets: [{ name: 'invoices', collection: 'invoices' }] } as unknown as Parameters<typeof write>[2]),
 })
