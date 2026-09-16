@@ -111,6 +111,38 @@ const bytes = await toBytes<Invoice>(vault, {
 // → Uint8Array ready for `fs.writeFile` or `new Blob([bytes])`
 ```
 
+#### Reproducible archives
+
+Pass `mtime` to make the bytes byte-reproducible — needed when the
+archive is content-addressed, hashed as an attestation and rebuilt
+later to check the digest still holds:
+
+```ts
+import { toBytes } from '@noy-db/as-zip'
+
+interface Invoice { id: string; status: string }
+
+const reproducible = await toBytes<Invoice>(vault, {
+  records: { collection: 'invoices' },
+  mtime: new Date(0),
+})
+```
+
+One option, because two values reach the bytes on every export and
+pinning one without the other leaves the archive non-reproducible with
+nothing to warn you. `mtime` sets **both** the manifest's `exportedAt`
+and the mod-time on every entry.
+
+They fail differently, which is worth knowing: entry mod-times are
+MS-DOS **2-second** granular, so they are only *accidentally*
+reproducible and a back-to-back check passes; `exportedAt` is an ISO
+string at millisecond precision and never matches twice.
+
+⚠️ The two do not read alike for early dates. DOS has no years before
+1980 and clamps, so `new Date(0)` yields an `exportedAt` of
+`1970-01-01T00:00:00.000Z` while the file dates show `1980-01-01`.
+Both are correct — the formats disagree, not the code.
+
 ### `download(vault, options)` — browser
 
 ```ts
