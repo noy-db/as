@@ -120,4 +120,4 @@ All share the same authorization model; see [`docs/packages-exports.md#authoriza
 
 ## License
 
-Apache-2.0
+Apache-2.0 © vLannaAi
