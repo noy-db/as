@@ -8,8 +8,16 @@
  * Node file-write helpers.
  *
  * **Scope.** Multi-collection per call (unlike `as-csv` which is
- * single-collection). Whole-vault by default; pass `collections` to
- * restrict.
+ * single-collection). Whole-vault by default.
+ *
+ * ⚠️ `collections` FILTERS THE OUTPUT; it does not scope the read. Hub
+ * streams every collection and drops the ones you did not name, so
+ * asking for one still decrypts the rest. Measured in hub's published
+ * bundle, not inferred: the port calls
+ * `exportStream({ granularity: 'collection' })` with no collection
+ * argument and applies the filter per chunk afterwards. That matters
+ * here because `as-*` sees plaintext by design — it is a property of
+ * the read path, not a defect in this package.
  *
  * See `docs/patterns/as-exports.md` for the three-tier egress model
  * (Tier 1 in-memory → Tier 2 browser download → Tier 3 disk write).
