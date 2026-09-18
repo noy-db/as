@@ -10,14 +10,21 @@
  * **Scope.** Multi-collection per call (unlike `as-csv` which is
  * single-collection). Whole-vault by default.
  *
- * ⚠️ `collections` FILTERS THE OUTPUT; it does not scope the read. Hub
- * streams every collection and drops the ones you did not name, so
- * asking for one still decrypts the rest. Measured in hub's published
- * bundle, not inferred: the port calls
- * `exportStream({ granularity: 'collection' })` with no collection
- * argument and applies the filter per chunk afterwards. That matters
- * here because `as-*` sees plaintext by design — it is a property of
- * the read path, not a defect in this package.
+ * ⚠️ **Through `@noy-db/hub@0.8.0`, `collections` FILTERS THE OUTPUT and
+ * does not scope the read** — hub streams every collection and drops
+ * the ones you did not name, so asking for one still decrypts the
+ * rest. Measured in the published 0.8.0 tarball, not inferred: the
+ * port calls `exportStream({ granularity: 'collection' })` with no
+ * collection argument and applies the filter per chunk afterwards.
+ * That matters here because `as-*` sees plaintext by design — a
+ * property of the read path, not a defect in this package.
+ *
+ * ⭐ **Anchored to a version because it is changing.** core#45(b)
+ * narrows the read upstream; the claim above holds for every hub
+ * published as of 2026-09-18 and becomes false at core's next cut.
+ * **Re-measure against the hub you actually resolve** — unpack its
+ * tarball and look — rather than trusting either version of this
+ * sentence.
  *
  * See `docs/patterns/as-exports.md` for the three-tier egress model
  * (Tier 1 in-memory → Tier 2 browser download → Tier 3 disk write).
