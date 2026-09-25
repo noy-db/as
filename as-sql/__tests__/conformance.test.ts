@@ -91,11 +91,14 @@ runFormatConformanceTests('as-sql', {
   observableVault: seededVaultWithStore,
   exports: [
     { name: 'vault.export(asSql())', run: (vault) => vault.export(asSql(), { collections: ['invoices'] }) },
-    { name: 'download', run: (vault) => download(vault, { collection: 'invoices' } as never) },
-    { name: 'write', run: (vault) => write(vault, '/tmp/conformance.sql', { collection: 'invoices', acknowledgeRisks: true } as never) },
+    { name: 'download', run: (vault) => download(vault, { include: ['invoices'] }) },
+    { name: 'write', run: (vault) => write(vault, '/tmp/conformance.sql', { include: ['invoices'], acknowledgeRisks: true }) },
   ],
   // No imports: as-sql is one-way (a migration helper; its NoydbFormat has no
   // decode), so the SKIPPED line the kit prints for it is a documented absence.
+  // ⭐ The cast IS the point: `acknowledgeRisks: true` is REQUIRED by
+  // AsSQLWriteOptions and this kit case exists to prove the RUNTIME guard refuses a
+  // call that omits it. A type-clean call cannot express the input under test.
   writeWithoutAcknowledgement: (vault, path) =>
-    write(vault, path, { collection: 'invoices' } as never),
+    write(vault, path, { include: ['invoices'] } as never),
 })
