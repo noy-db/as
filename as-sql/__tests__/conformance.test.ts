@@ -72,6 +72,11 @@ async function seededVaultWithStore(): Promise<{ vault: Vault; store: ObservedSt
   const seed = await createNoydb(opts)
   const seeded = await seed.openVault('acme')
   await seeded.collection('invoices').put('inv-1', { id: 'inv-1', client: 'Globex', amount: 1500 })
+  // ⭐ A SECOND collection is what makes the scope case falsifiable. Over a vault
+  // holding only `invoices`, a scoped export and an unscoped one produce the same
+  // set, so the assertion passes whatever the call does — the kit requires the
+  // unscoped twin to produce strictly MORE than `expected`.
+  await seeded.collection('receipts').put('rcp-1', { id: 'rcp-1', client: 'Initech', amount: 42 })
   await seed.grant('acme', {
     userId: 'owner-01', displayName: 'Owner', role: 'owner',
     secret: 'owner-pass',
@@ -101,4 +106,13 @@ runFormatConformanceTests('as-sql', {
   // call that omits it. A type-clean call cannot express the input under test.
   writeWithoutAcknowledgement: (vault, path) =>
     write(vault, path, { include: ['invoices'] } as never),
+  // ⚠️ as-sql spells its scope `include`, not `collections` — the wrapper
+  // translates it to the port's option. That translation is exactly what this
+  // case pins, and it is invisible to a direct `vault.export` call.
+  scope: {
+    name: 'download',
+    scoped: (vault) => download(vault, { include: ['invoices'] }),
+    expected: ['invoices'],
+    unscoped: (vault) => download(vault, {}),
+  },
 })

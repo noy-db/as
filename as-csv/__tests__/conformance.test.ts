@@ -78,6 +78,11 @@ async function seededVaultWithStore(): Promise<{ vault: Vault; store: ObservedSt
   const seed = await createNoydb(opts)
   const seeded = await seed.openVault('acme')
   await seeded.collection('invoices').put('inv-1', { id: 'inv-1', client: 'Globex', amount: 1500 })
+  // ⭐ A SECOND collection is what makes the scope case falsifiable. Over a vault
+  // holding only `invoices`, a scoped export and an unscoped one produce the same
+  // set, so the assertion passes whatever the call does — the kit requires the
+  // unscoped twin to produce strictly MORE than `expected`.
+  await seeded.collection('receipts').put('rcp-1', { id: 'rcp-1', client: 'Initech', amount: 42 })
   await seed.grant('acme', {
     userId: 'owner-01', displayName: 'Owner', role: 'owner',
     secret: 'owner-pass',
@@ -115,4 +120,13 @@ runFormatConformanceTests('as-csv', {
     // probe exists to refuse. Two-step cast because the shapes genuinely do
     // not overlap — that non-overlap is the thing under test.
     write(vault, path, { collections: ['invoices'] } as unknown as Parameters<typeof write>[2]),
+  // `download` is the subject rather than `vault.export`: the drift this case
+  // exists to catch (as-csv calling its own API with the renamed option) happens
+  // in the WRAPPER, which is the half a direct `vault.export` call never exercises.
+  scope: {
+    name: 'download',
+    scoped: (vault) => download(vault, { collections: ['invoices'] }),
+    expected: ['invoices'],
+    unscoped: (vault) => download(vault, {}),
+  },
 })

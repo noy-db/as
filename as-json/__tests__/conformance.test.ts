@@ -73,6 +73,11 @@ async function seededVaultWithStore(): Promise<{ vault: Vault; store: ObservedSt
   const seed = await createNoydb(opts)
   const seeded = await seed.openVault('acme')
   await seeded.collection('invoices').put('inv-1', { id: 'inv-1', client: 'Globex', amount: 1500 })
+  // ⭐ A SECOND collection is what makes the scope case falsifiable. Over a vault
+  // holding only `invoices`, a scoped export and an unscoped one produce the same
+  // set, so the assertion passes whatever the call does — the kit requires the
+  // unscoped twin to produce strictly MORE than `expected`.
+  await seeded.collection('receipts').put('rcp-1', { id: 'rcp-1', client: 'Initech', amount: 42 })
   await seed.grant('acme', {
     userId: 'owner-01', displayName: 'Owner', role: 'owner',
     secret: 'owner-pass',
@@ -106,4 +111,13 @@ runFormatConformanceTests('as-json', {
   // type-clean call cannot express the input under test.
   writeWithoutAcknowledgement: (vault, path) =>
     write(vault, path, { collections: ['invoices'] } as never),
+  // `toString` is the subject because it routes through `vault.export`, which is
+  // where the kit can wrap `encode`. An entry point driving `exportStream` itself
+  // never reaches one, and the kit FAILS that rather than passing it.
+  scope: {
+    name: 'toString',
+    scoped: (vault) => toString(vault, { collections: ['invoices'] }),
+    expected: ['invoices'],
+    unscoped: (vault) => toString(vault, {}),
+  },
 })
