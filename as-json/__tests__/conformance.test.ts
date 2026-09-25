@@ -94,12 +94,16 @@ runFormatConformanceTests('as-json', {
     { name: 'vault.export(asJson())', run: (vault) => vault.export(asJson(), { collections: ['invoices'] }) },
     { name: 'toString', run: (vault) => toString(vault, {}) },
     { name: 'toObject', run: (vault) => toObject(vault, {}) },
-    { name: 'download', run: (vault) => download(vault, { collection: 'invoices' } as never) },
-    { name: 'write', run: (vault) => write(vault, '/tmp/conformance.json', { collection: 'invoices', acknowledgeRisks: true } as never) },
+    { name: 'download', run: (vault) => download(vault, { collections: ['invoices'] }) },
+    { name: 'write', run: (vault) => write(vault, '/tmp/conformance.json', { collections: ['invoices'], acknowledgeRisks: true }) },
   ],
   imports: [
     { name: 'vault.import(asJson())', run: (vault) => vault.import(asJson(), JSON.stringify({ invoices: { 'inv-2': { id: 'inv-2' } } })) },
   ],
+  // ⭐ The cast IS the point, and this is the only site in this fixture that keeps
+  // one: `acknowledgeRisks: true` is REQUIRED by AsJSONWriteOptions, and this kit
+  // case exists to prove the RUNTIME guard refuses a call that omits it. A
+  // type-clean call cannot express the input under test.
   writeWithoutAcknowledgement: (vault, path) =>
-    write(vault, path, { collection: 'invoices' } as never),
+    write(vault, path, { collections: ['invoices'] } as never),
 })

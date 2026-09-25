@@ -97,6 +97,10 @@ runFormatConformanceTests('as-xml', {
   imports: [
     { name: 'vault.import(asXml())', run: (vault) => vault.import(asXml(), '<Records><Invoice><id>inv-2</id></Invoice></Records>', { collection: 'invoices' }) },
   ],
+  // ⭐ The cast IS the point here, and it is the one place in this fixture that
+  // keeps one: `acknowledgeRisks: true` is REQUIRED by the write options type, and
+  // this kit case exists to prove the RUNTIME guard refuses a call that omits it.
+  // A type-clean call cannot express the input under test.
   writeWithoutAcknowledgement: (vault, path) =>
     write(vault, path, { collection: 'invoices' } as never),
 })
