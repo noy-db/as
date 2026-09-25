@@ -12,7 +12,7 @@
  * wrappers (`download`, `write`), and the import gate, which the old fixture
  * never touched.
  */
-import { runFormatConformanceTests, observeStore, type ObservedStore } from '@noy-db/test-format-conformance'
+import { runFormatConformanceTests, observeStore, type ObservedStore } from '@noy-db/ports/as'
 import type { NoydbStore, EncryptedEnvelope, VaultSnapshot, Vault } from '@noy-db/hub'
 import { ConflictError, createNoydb } from '@noy-db/hub'
 import { withTeam } from '@noy-db/hub/team'

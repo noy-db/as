@@ -1,7 +1,7 @@
 {
   "name": "@noy-db/as-zip",
   "version": "0.8.0",
-  "description": "Composite record + blob archive export for noy-db — bundles a collection's records plus every attached blob into one zip. Zero dependencies (STORE-only zip encoder). Gated by the RFC #249 `assertCanExport('plaintext', …)` gate with format `'zip'`. Part of the @noy-db/as-* portable-artefact family.",
+  "description": "Composite record + blob archive export for noy-db \u2014 bundles a collection's records plus every attached blob into one zip. Zero dependencies (STORE-only zip encoder). Gated by the RFC #249 `assertCanExport('plaintext', \u2026)` gate with format `'zip'`. Part of the @noy-db/as-* portable-artefact family.",
   "license": "Apache-2.0",
   "author": "vLannaAi <vicio@lanna.ai>",
   "homepage": "https://github.com/noy-db/as/tree/main/as-zip#readme",
@@ -40,11 +40,11 @@
     "interop:fixtures": "node scripts/interop-fixtures.mjs"
   },
   "peerDependencies": {
-    "@noy-db/hub": "^0.7.0 || ^0.7.1-pre.0 || ^0.8.0-pre.0"
+    "@noy-db/hub": "^0.7.0 || ^0.7.1-pre.0 || ^0.8.0-pre.0 || ^0.9.0-pre.1"
   },
   "devDependencies": {
-    "@noy-db/hub": "0.8.0",
-    "@noy-db/test-format-conformance": "0.8.0",
+    "@noy-db/hub": "0.9.0-pre.1",
+    "@noy-db/ports": "0.9.0-pre.1",
     "@noy-db/to-memory": "0.8.0",
     "@types/node": "^22.0.0",
     "happy-dom": "^18.0.0"
@@ -62,5 +62,6 @@
   "publishConfig": {
     "access": "public",
     "tag": "latest"
-  }
+  },
+  "dependencies": {}
 }
