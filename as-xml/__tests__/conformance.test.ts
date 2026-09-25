@@ -72,6 +72,9 @@ async function seededVaultWithStore(): Promise<{ vault: Vault; store: ObservedSt
   const seed = await createNoydb(opts)
   const seeded = await seed.openVault('acme')
   await seeded.collection('invoices').put('inv-1', { id: 'inv-1', client: 'Globex', amount: 1500 })
+  // ⭐ A SECOND collection is what makes the scope case falsifiable — the kit
+  // requires the unscoped twin to produce strictly MORE than `expected`.
+  await seeded.collection('receipts').put('rcp-1', { id: 'rcp-1', client: 'Initech', amount: 42 })
   await seed.grant('acme', {
     userId: 'owner-01', displayName: 'Owner', role: 'owner',
     secret: 'owner-pass',
@@ -103,4 +106,13 @@ runFormatConformanceTests('as-xml', {
   // A type-clean call cannot express the input under test.
   writeWithoutAcknowledgement: (vault, path) =>
     write(vault, path, { collection: 'invoices' } as never),
+  // ⚠️ The subject is `vault.export`, NOT `download`/`write`: as-xml's wrappers
+  // take a REQUIRED singular `collection`, so they have no unscoped twin to act
+  // as the control. What this pins is the port's scoping, not as-xml's own.
+  scope: {
+    name: 'vault.export(asXml())',
+    scoped: (vault) => vault.export(asXml(), { collections: ['invoices'] }),
+    expected: ['invoices'],
+    unscoped: (vault) => vault.export(asXml(), {}),
+  },
 })
