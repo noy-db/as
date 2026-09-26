@@ -343,20 +343,10 @@ export async function writeXlsx(
     ...sheetEntries.map((s, i) => ({ path: s.path, bytes: ENCODER.encode(sheetXmls[i] ?? '') })),
   ]
 
-  // Stamped PER ENTRY, not via `writeZip`'s archive-wide `mtime`.
-  // `ZipEntry.mtime` is in as-zip's PUBLISHED surface; the archive-wide
-  // option is not published yet, and as-xlsx resolves as-zip from the
-  // REGISTRY (caret peer, deliberately — it proves published
-  // compatibility on every run). Reaching for the newer option here
-  // would not compile against the floor. Switch this over only once a
-  // published as-zip carries it.
-  // Destructured first: under `exactOptionalPropertyTypes`, narrowing
-  // `options.mtime` does not survive into the closure, so the spread
-  // would widen back to `Date | undefined` and fail the DTS build.
-  const { mtime } = options
-  const stamped: ZipEntry[] = mtime === undefined ? entries : entries.map((e) => ({ ...e, mtime }))
-
-  return await writeZip(stamped)
+  // One archive-wide stamp, not one per entry. `WriteZipOptions.mtime` reached
+  // as-zip's PUBLISHED surface at 0.9.0-pre.0, which is this line's floor now,
+  // so the per-entry map that stood in for it is gone (family#46).
+  return await writeZip(entries, options.mtime === undefined ? {} : { mtime: options.mtime })
 }
 
 // ── Cell emission ─────────────────────────────────────────────────
