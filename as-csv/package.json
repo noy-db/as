@@ -1,6 +1,6 @@
 {
   "name": "@noy-db/as-csv",
-  "version": "0.8.0",
+  "version": "0.9.0-pre.0",
   "description": "CSV plaintext export for noy-db \u2014 decrypts records and formats as comma-separated values. Gated by the RFC #249 `assertCanExport('plaintext', \u2026)` gate; writes an audit-ledger entry on every call. Part of the @noy-db/as-* portable-artefact family (plaintext tier).",
   "license": "Apache-2.0",
   "author": "vLannaAi <vicio@lanna.ai>",
@@ -42,8 +42,8 @@
     "@noy-db/hub": "^0.7.0 || ^0.7.1-pre.0 || ^0.8.0-pre.0 || ^0.9.0-pre.1"
   },
   "devDependencies": {
-    "@noy-db/hub": "0.9.0-pre.1",
-    "@noy-db/ports": "0.9.0-pre.1",
+    "@noy-db/hub": "0.9.0-pre.2",
+    "@noy-db/ports": "0.9.0-pre.2",
     "@types/node": "^22.0.0",
     "happy-dom": "^18.0.0"
   },
