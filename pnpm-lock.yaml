@@ -145,7 +145,7 @@ importers:
         version: 5.11.1
     devDependencies:
       '@noy-db/as-zip':
-        specifier: ^0.9.0-pre.0
+        specifier: ^0.9.0-pre.0 || ^0.9.0-pre.1
         version: 0.9.0-pre.0(@noy-db/hub@0.9.0-pre.2)
       '@noy-db/hub':
         specifier: 0.9.0-pre.2
