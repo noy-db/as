@@ -11,6 +11,8 @@ which is the opposite of hub's situation.
 
 ## 0.9.0-pre.0
 
+Joins the 0.9 line, and ships the reproducible-output work (#2, #4). All ten packages move to `0.9.0-pre.0` together.
+
 ### Reproducible output (#2)
 
 - `writeXlsx(sheets, { mtime })` and `writeZip(entries, { mtime })` fix the
