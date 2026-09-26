@@ -9,6 +9,23 @@ changelog**: every `files` array is `["dist", "README.md", "LICENSE"]`, so a
 mistake in this file is amendable rather than frozen into a published tarball,
 which is the opposite of hub's situation.
 
+## Unreleased
+
+### family#46 — the archive-wide mtime, collapsed
+
+- `writeXlsx` now calls `writeZip(entries, { mtime })` instead of stamping every `ZipEntry`
+  individually. `WriteZipOptions.mtime` reached as-zip's PUBLISHED surface at `0.9.0-pre.0`,
+  measured on the packed tarball with the read scoped to the interface — a whole-file grep for
+  `mtime` returns hits on `ZipEntry.mtime` at every version and so cannot answer this.
+- `as-xlsx`'s `@noy-db/as-zip` devDependency collapses from the bootstrap append
+  `^0.8.0 || ^0.9.0-pre.0` back to a single `^0.9.0-pre.0`, matching the peer again. A spent
+  bootstrap left standing reads as a deliberate compatibility promise.
+- ⭐ The 404-test suite cannot validate this change: the two forms produce the SAME bytes, which
+  is why the workaround could stand indefinitely with nothing going red. The evidence is a byte
+  comparison against the published per-entry build — **identical** — with a control run carrying
+  no `mtime` that **differs**, so the match is informative rather than trivially true.
+- The explanatory comment justifying the workaround is gone with it.
+
 ## 0.9.0-pre.0
 
 Joins the 0.9 line, and ships the reproducible-output work (#2, #4). All ten packages move to `0.9.0-pre.0` together.
