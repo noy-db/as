@@ -9,7 +9,17 @@ changelog**: every `files` array is `["dist", "README.md", "LICENSE"]`, so a
 mistake in this file is amendable rather than frozen into a published tarball,
 which is the opposite of hub's situation.
 
-## Unreleased
+## 0.9.0-pre.1
+
+Ships family#46 so the 0.9 stable can be promoted from a commit the pilot actually validated:
+`0.9.0-pre.0` did not contain it, and promoting an unvalidated change is what the "validate the
+published pre-release, then promote the exact validated commit" rule exists to prevent.
+
+⚠️ `as-xlsx`'s `@noy-db/as-zip` devDependency carries the bootstrap append
+`^0.9.0-pre.0 || ^0.9.0-pre.1` again, for the same install-time deadlock as the last cut — to be
+collapsed once `as-zip@0.9.0-pre.1` is on npm. This is structural, not an oversight: `version:set`
+narrows internal ranges to `^<next>`, and collapsing the append promptly is correct, so the
+append-then-collapse pair recurs at **every** cut of this repo.
 
 ### family#46 — the archive-wide mtime, collapsed
 
