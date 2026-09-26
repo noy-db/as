@@ -65,6 +65,15 @@ which is the opposite of hub's situation.
   `^0.9.0-pre.1` rather than `-pre.0` is deliberate — `pre.0` carries core#132 (last-writer-wins
   `_keyring` writes, `TamperedError` on a cold read) and nothing should resolve to it.
 - No source change at the new pin: 41 test files / 404 tests, `typecheck` and every gate green.
+- `as-xlsx`'s `@noy-db/as-zip` **peer** narrows to `^0.9.0-pre.0` — the line is lockstep and an
+  older `as-zip` does not bind the new hub seam. The **devDependency** carries the bootstrap
+  append `^0.8.0 || ^0.9.0-pre.0` so `pnpm install` can resolve during the cut; it collapses back
+  to a single caret as soon as `as-zip@0.9.0-pre.0` is on npm. ⚠️ The floor is the stable
+  `^0.8.0`, not the `^0.8.0-pre.0` the previous cut used: re-appending that literal range resolves
+  a **deprecated** `as-zip@0.8.0-pre.0`, measured.
+- ⚠️ The `@noy-db/to-memory` dev pin stays `0.8.0` here. It is on `noy-db/to`'s line and
+  `0.9.0-pre.0` there is not published yet — blocked, not skipped. It moves in the pre-publish
+  commit, after `to` publishes.
 
 ## 0.8.0
 

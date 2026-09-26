@@ -145,8 +145,8 @@ importers:
         version: 5.11.1
     devDependencies:
       '@noy-db/as-zip':
-        specifier: ^0.8.0-pre.0
-        version: 0.8.0-pre.0(@noy-db/hub@0.9.0-pre.2)
+        specifier: ^0.8.0 || ^0.9.0-pre.0
+        version: 0.8.0(@noy-db/hub@0.9.0-pre.2)
       '@noy-db/hub':
         specifier: 0.9.0-pre.2
         version: 0.9.0-pre.2
@@ -670,8 +670,8 @@ packages:
   '@nodable/entities@3.0.0':
     resolution: {integrity: sha512-8L9xFeTYKhm49xfIypoe2W5wV1m/3Z58kT+7kR9A8OyFxcPduI4VmxaUMQyKYrRjUoLLSXv6EKKID5Tvj9cUVw==}
 
-  '@noy-db/as-zip@0.8.0-pre.0':
-    resolution: {integrity: sha512-TfGEw7r+lzg+ppLbAwBfJEQ98M3kvhQ2gcmVPYAG+cQgqggwJGDrgntTr95jRHNoaQ11l3DwuGsreFSpec4Jug==}
+  '@noy-db/as-zip@0.8.0':
+    resolution: {integrity: sha512-T+oioQkSNDrHi/xGSfMnWVxK0qIo2XfI69ucS1/wOcO38YiKEMeBOp5aOeEjo9mtau4aL0/Rh4wJppqKeEnV8A==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
       '@noy-db/hub': ^0.7.0 || ^0.7.1-pre.0 || ^0.8.0-pre.0
@@ -2067,7 +2067,7 @@ snapshots:
 
   '@nodable/entities@3.0.0': {}
 
-  '@noy-db/as-zip@0.8.0-pre.0(@noy-db/hub@0.9.0-pre.2)':
+  '@noy-db/as-zip@0.8.0(@noy-db/hub@0.9.0-pre.2)':
     dependencies:
       '@noy-db/hub': 0.9.0-pre.2
 
