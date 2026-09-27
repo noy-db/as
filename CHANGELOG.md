@@ -9,6 +9,22 @@ changelog**: every `files` array is `["dist", "README.md", "LICENSE"]`, so a
 mistake in this file is amendable rather than frozen into a published tarball,
 which is the opposite of hub's situation.
 
+## 0.9.0
+
+**Ten export formats join the 0.9 stable line.** Exact dev pins on `@noy-db/hub`, `@noy-db/ports` and
+`@noy-db/to-memory` move to `0.9.0`.
+
+- ⛔ **`peerDependencies` on hub untouched.** The range already carries `^0.9.0-pre.1`, which for a 0.x
+  caret is `>=0.9.0-pre.1 <0.10.0` — it admits `0.9.0` stable already, so no second append is owed.
+- **`as-xlsx`'s `@noy-db/as-zip` devDependency collapses to a single `^0.9.0-pre.1`**, matching its peer
+  again. ⚠️ The bootstrap append exists only to survive the install-time deadlock at cut time, and a
+  spent bootstrap left standing reads as a deliberate compatibility promise it is not. Measured before
+  collapsing: the append and the peer both admit `0.9.0`, and `^0.9.0-pre.1` still resolves to the
+  published `as-zip@0.9.0-pre.1`, so nothing deadlocks.
+- ⭐ **The append-then-collapse pair recurs at every cut of this repo** and is structural, not an
+  oversight: `version:set` narrows internal ranges to `^<next>`, which names a version that does not
+  exist yet.
+
 ## 0.9.0-pre.1
 
 Ships family#46 so the 0.9 stable can be promoted from a commit the pilot actually validated:
