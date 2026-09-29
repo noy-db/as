@@ -42,20 +42,20 @@ importers:
         specifier: ^3.0.0
         version: 3.1123.0
       '@noy-db/hub':
-        specifier: 0.9.0
-        version: 0.9.0
+        specifier: 0.10.0-pre.0
+        version: 0.10.0-pre.0
 
   as-blob:
     devDependencies:
       '@noy-db/hub':
-        specifier: 0.9.0
-        version: 0.9.0
+        specifier: 0.10.0-pre.0
+        version: 0.10.0-pre.0
       '@noy-db/ports':
-        specifier: 0.9.0
-        version: 0.9.0(@noy-db/hub@0.9.0)(vitest@3.2.7(@types/node@22.20.1)(happy-dom@18.0.1))
+        specifier: 0.10.0-pre.0
+        version: 0.10.0-pre.0(@noy-db/hub@0.10.0-pre.0)(vitest@3.2.7(@types/node@22.20.1)(happy-dom@18.0.1))
       '@noy-db/to-memory':
-        specifier: 0.9.0
-        version: 0.9.0(@noy-db/hub@0.9.0)
+        specifier: 0.10.0-pre.0
+        version: 0.10.0-pre.0(@noy-db/hub@0.10.0-pre.0)
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.1
@@ -66,11 +66,11 @@ importers:
   as-csv:
     devDependencies:
       '@noy-db/hub':
-        specifier: 0.9.0
-        version: 0.9.0
+        specifier: 0.10.0-pre.0
+        version: 0.10.0-pre.0
       '@noy-db/ports':
-        specifier: 0.9.0
-        version: 0.9.0(@noy-db/hub@0.9.0)(vitest@3.2.7(@types/node@22.20.1)(happy-dom@18.0.1))
+        specifier: 0.10.0-pre.0
+        version: 0.10.0-pre.0(@noy-db/hub@0.10.0-pre.0)(vitest@3.2.7(@types/node@22.20.1)(happy-dom@18.0.1))
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.1
@@ -81,11 +81,11 @@ importers:
   as-json:
     devDependencies:
       '@noy-db/hub':
-        specifier: 0.9.0
-        version: 0.9.0
+        specifier: 0.10.0-pre.0
+        version: 0.10.0-pre.0
       '@noy-db/ports':
-        specifier: 0.9.0
-        version: 0.9.0(@noy-db/hub@0.9.0)(vitest@3.2.7(@types/node@22.20.1)(happy-dom@18.0.1))
+        specifier: 0.10.0-pre.0
+        version: 0.10.0-pre.0(@noy-db/hub@0.10.0-pre.0)(vitest@3.2.7(@types/node@22.20.1)(happy-dom@18.0.1))
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.1
@@ -96,11 +96,11 @@ importers:
   as-ndjson:
     devDependencies:
       '@noy-db/hub':
-        specifier: 0.9.0
-        version: 0.9.0
+        specifier: 0.10.0-pre.0
+        version: 0.10.0-pre.0
       '@noy-db/ports':
-        specifier: 0.9.0
-        version: 0.9.0(@noy-db/hub@0.9.0)(vitest@3.2.7(@types/node@22.20.1)(happy-dom@18.0.1))
+        specifier: 0.10.0-pre.0
+        version: 0.10.0-pre.0(@noy-db/hub@0.10.0-pre.0)(vitest@3.2.7(@types/node@22.20.1)(happy-dom@18.0.1))
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.1
@@ -111,11 +111,11 @@ importers:
   as-noydb:
     devDependencies:
       '@noy-db/hub':
-        specifier: 0.9.0
-        version: 0.9.0
+        specifier: 0.10.0-pre.0
+        version: 0.10.0-pre.0
       '@noy-db/ports':
-        specifier: 0.9.0
-        version: 0.9.0(@noy-db/hub@0.9.0)(vitest@3.2.7(@types/node@22.20.1)(happy-dom@18.0.1))
+        specifier: 0.10.0-pre.0
+        version: 0.10.0-pre.0(@noy-db/hub@0.10.0-pre.0)(vitest@3.2.7(@types/node@22.20.1)(happy-dom@18.0.1))
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.1
@@ -126,11 +126,11 @@ importers:
   as-sql:
     devDependencies:
       '@noy-db/hub':
-        specifier: 0.9.0
-        version: 0.9.0
+        specifier: 0.10.0-pre.0
+        version: 0.10.0-pre.0
       '@noy-db/ports':
-        specifier: 0.9.0
-        version: 0.9.0(@noy-db/hub@0.9.0)(vitest@3.2.7(@types/node@22.20.1)(happy-dom@18.0.1))
+        specifier: 0.10.0-pre.0
+        version: 0.10.0-pre.0(@noy-db/hub@0.10.0-pre.0)(vitest@3.2.7(@types/node@22.20.1)(happy-dom@18.0.1))
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.1
@@ -145,17 +145,17 @@ importers:
         version: 5.11.1
     devDependencies:
       '@noy-db/as-zip':
-        specifier: ^0.9.0-pre.1
-        version: 0.9.0-pre.1(@noy-db/hub@0.9.0)
+        specifier: ^0.9.0-pre.1 || ^0.10.0-pre.0
+        version: 0.9.0-pre.1(@noy-db/hub@0.10.0-pre.0)
       '@noy-db/hub':
-        specifier: 0.9.0
-        version: 0.9.0
+        specifier: 0.10.0-pre.0
+        version: 0.10.0-pre.0
       '@noy-db/ports':
-        specifier: 0.9.0
-        version: 0.9.0(@noy-db/hub@0.9.0)(vitest@3.2.7(@types/node@22.20.1)(happy-dom@18.0.1))
+        specifier: 0.10.0-pre.0
+        version: 0.10.0-pre.0(@noy-db/hub@0.10.0-pre.0)(vitest@3.2.7(@types/node@22.20.1)(happy-dom@18.0.1))
       '@noy-db/to-memory':
-        specifier: 0.9.0
-        version: 0.9.0(@noy-db/hub@0.9.0)
+        specifier: 0.10.0-pre.0
+        version: 0.10.0-pre.0(@noy-db/hub@0.10.0-pre.0)
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.1
@@ -170,11 +170,11 @@ importers:
         version: 5.11.1
     devDependencies:
       '@noy-db/hub':
-        specifier: 0.9.0
-        version: 0.9.0
+        specifier: 0.10.0-pre.0
+        version: 0.10.0-pre.0
       '@noy-db/ports':
-        specifier: 0.9.0
-        version: 0.9.0(@noy-db/hub@0.9.0)(vitest@3.2.7(@types/node@22.20.1)(happy-dom@18.0.1))
+        specifier: 0.10.0-pre.0
+        version: 0.10.0-pre.0(@noy-db/hub@0.10.0-pre.0)(vitest@3.2.7(@types/node@22.20.1)(happy-dom@18.0.1))
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.1
@@ -185,14 +185,14 @@ importers:
   as-zip:
     devDependencies:
       '@noy-db/hub':
-        specifier: 0.9.0
-        version: 0.9.0
+        specifier: 0.10.0-pre.0
+        version: 0.10.0-pre.0
       '@noy-db/ports':
-        specifier: 0.9.0
-        version: 0.9.0(@noy-db/hub@0.9.0)(vitest@3.2.7(@types/node@22.20.1)(happy-dom@18.0.1))
+        specifier: 0.10.0-pre.0
+        version: 0.10.0-pre.0(@noy-db/hub@0.10.0-pre.0)(vitest@3.2.7(@types/node@22.20.1)(happy-dom@18.0.1))
       '@noy-db/to-memory':
-        specifier: 0.9.0
-        version: 0.9.0(@noy-db/hub@0.9.0)
+        specifier: 0.10.0-pre.0
+        version: 0.10.0-pre.0(@noy-db/hub@0.10.0-pre.0)
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.1
@@ -673,11 +673,12 @@ packages:
   '@noy-db/as-zip@0.9.0-pre.1':
     resolution: {integrity: sha512-8tRDXQvM/l/uz+GGT16b/j2zvwjnZH/ZDeF/i9PrC8O/WaYoEWbQi5MOaTQK1vYQ1wRQE1b+2R68bdi6wN3isQ==}
     engines: {node: '>=22.0.0'}
+    deprecated: Superseded by 0.9.0. The 0.9 line is the supported release. 0.7.0 to 0.9.0 is witnessed in both directions for pod data (upgrade and rollback). Versions below 0.7.0 have no witnessed migration path - read the 0.9.0 release notes before moving.
     peerDependencies:
       '@noy-db/hub': ^0.7.0 || ^0.7.1-pre.0 || ^0.8.0-pre.0 || ^0.9.0-pre.1
 
-  '@noy-db/hub@0.9.0':
-    resolution: {integrity: sha512-KEmlOw6YmMDB6fi7gFJKGaMYuifNIWN16SlUDUrmIDf22xLczh3L0bOZlbhW+FhmmjlOJiZF/FjYxNJS+Ee11w==}
+  '@noy-db/hub@0.10.0-pre.0':
+    resolution: {integrity: sha512-cQOrfzd6iuuo+iryw92sGz5+3Xn2b7ri1FGTApMgi5W8S+233kpp+jYhli4jFSHBSZdTtXnrflNxsQ6ed54dKw==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
       zod: ^3.0.0 || ^4.0.0
@@ -688,18 +689,18 @@ packages:
       zod-to-json-schema:
         optional: true
 
-  '@noy-db/ports@0.9.0':
-    resolution: {integrity: sha512-Myt30JSMM2NU4wNlJveM/gcI3VR3OzegdDJJ0L17UWKasq4KCxBiX8qCAM6NS1n+4pfU3PFKfpQ1mLu5636aqg==}
+  '@noy-db/ports@0.10.0-pre.0':
+    resolution: {integrity: sha512-+BQ3yNOqGEfej6vQhPsM2x+FbTXzjoJiiqOHY5k8tCVn9bcm6CmLNRDS81xVS824VauT4sV2PSieP/qvZM82KA==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
-      '@noy-db/hub': ^0.9.0
+      '@noy-db/hub': ^0.10.0-pre.0
       vitest: ^3.0.0
 
-  '@noy-db/to-memory@0.9.0':
-    resolution: {integrity: sha512-aWd0gm1e/lNhFZ0+ksYXJJhyEu3h7xRqnvbNnx6NPogPlZKFJILPtizW12+L47T14EW7TzQKKgHSmXE8glZUNA==}
+  '@noy-db/to-memory@0.10.0-pre.0':
+    resolution: {integrity: sha512-R5lSiCqr5ZMiJl87Ly7mrmruKyw7k5ZeV0pOyqx+yK90wy2X4WwX+xNcM902zToW+a7K/1WJGjHGESAqjQjOiw==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
-      '@noy-db/hub': ^0.8.0 || ^0.9.0-pre.1
+      '@noy-db/hub': ^0.8.0 || ^0.9.0-pre.1 || ^0.10.0-pre.0
 
   '@rollup/rollup-android-arm-eabi@4.63.1':
     resolution: {integrity: sha512-UZ8sUxPTiHWYX9QNdJedb1kDZSpS1t/VPWBWGSgqHNi9w3Cu6IXvu2mzbhiTiPvtrqgTQJ+zqiAq2iPIPilpaQ==}
@@ -2067,20 +2068,20 @@ snapshots:
 
   '@nodable/entities@3.0.0': {}
 
-  '@noy-db/as-zip@0.9.0-pre.1(@noy-db/hub@0.9.0)':
+  '@noy-db/as-zip@0.9.0-pre.1(@noy-db/hub@0.10.0-pre.0)':
     dependencies:
-      '@noy-db/hub': 0.9.0
+      '@noy-db/hub': 0.10.0-pre.0
 
-  '@noy-db/hub@0.9.0': {}
+  '@noy-db/hub@0.10.0-pre.0': {}
 
-  '@noy-db/ports@0.9.0(@noy-db/hub@0.9.0)(vitest@3.2.7(@types/node@22.20.1)(happy-dom@18.0.1))':
+  '@noy-db/ports@0.10.0-pre.0(@noy-db/hub@0.10.0-pre.0)(vitest@3.2.7(@types/node@22.20.1)(happy-dom@18.0.1))':
     dependencies:
-      '@noy-db/hub': 0.9.0
+      '@noy-db/hub': 0.10.0-pre.0
       vitest: 3.2.7(@types/node@22.20.1)(happy-dom@18.0.1)
 
-  '@noy-db/to-memory@0.9.0(@noy-db/hub@0.9.0)':
+  '@noy-db/to-memory@0.10.0-pre.0(@noy-db/hub@0.10.0-pre.0)':
     dependencies:
-      '@noy-db/hub': 0.9.0
+      '@noy-db/hub': 0.10.0-pre.0
 
   '@rollup/rollup-android-arm-eabi@4.63.1':
     optional: true

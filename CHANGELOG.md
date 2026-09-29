@@ -9,6 +9,17 @@ changelog**: every `files` array is `["dist", "README.md", "LICENSE"]`, so a
 mistake in this file is amendable rather than frozen into a published tarball,
 which is the opposite of hub's situation.
 
+## 0.10.0-pre.0
+
+**Ten export formats join the 0.10 pre line**, in the whole-family `0.10.0-pre.0` cut. No source change.
+Exact dev pins on `@noy-db/hub`, `@noy-db/ports` and `@noy-db/to-memory` move to `0.10.0-pre.0`.
+
+- `|| ^0.10.0-pre.0` **appended** to every `@noy-db/hub` peer range. A 0.x caret excludes the next
+  minor, so `^0.9.0-pre.1` does not admit `0.10.0-pre.0`.
+- `as-xlsx`: the `@noy-db/as-zip` **peer** narrows to `^0.10.0-pre.0` (lockstep), and the
+  **devDependency** carries the bootstrap append `^0.9.0-pre.1 || ^0.10.0-pre.0` so the cut installs
+  before `as-zip@0.10.0-pre.0` exists. ⭐ Collapse it to `^0.10.0-pre.0` in the next cut's commit.
+
 ## 0.9.0
 
 **Ten export formats join the 0.9 stable line.** Exact dev pins on `@noy-db/hub`, `@noy-db/ports` and
