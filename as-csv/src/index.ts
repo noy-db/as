@@ -50,7 +50,7 @@ export interface AsCSVDownloadOptions extends AsCSVOptions {
 
 /**
  * Serialise a collection as a CSV string. Pure operation — no side
- * effects beyond the authorization check + audit ledger write.
+ * effects beyond the authorization check.
  */
 /**
  * The pure encoder. Receives records — already gated and already redacted by

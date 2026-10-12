@@ -628,6 +628,30 @@ function asCached(v: unknown): string | number | boolean {
 const LOCALE_KEY = /^[A-Za-z0-9_-]+$/
 
 /**
+ * `[id, record]` for every record the caller can see. The id is not derivable
+ * from a record (core#103), so smart mode cannot read it off `rec.id`.
+ *
+ * ⚠️ Read defensively, not by name: `listEntries` first shipped in hub 0.9.0
+ * and the published peer floor is still `^0.7.0` — a typed call fails
+ * `peer-floor` with TS2339. Below 0.9 the field-based read is all there is.
+ * as-zip carries the same helper; it is not imported from there because this
+ * package resolves as-zip from the REGISTRY, which lags the workspace.
+ */
+async function listWithIds(collection: {
+  list(): Promise<unknown[]>
+}): Promise<Array<readonly [string, unknown]>> {
+  const c = collection as { listEntries?: () => Promise<Array<readonly [string, unknown]>> }
+  if (typeof c.listEntries === 'function') return c.listEntries()
+  const out: Array<readonly [string, unknown]> = []
+  for (const item of await collection.list()) {
+    const rec = item as Record<string, unknown> | null
+    const id = rec?.id ?? rec?._id
+    if (typeof id === 'string') out.push([id, item])
+  }
+  return out
+}
+
+/**
  * Smart-workbook builder (#414 P1+P2): id-first sheets, FK→VLOOKUP label columns,
  * a `_manifest` index, and — when i18n fields are declared — per-locale columns
  * with a display column driven live by a global `LANG` named range on a
@@ -656,13 +680,14 @@ async function buildSmartSheets<T = unknown>(
   for (const sheetOpt of options.sheets) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const collection = vault.collection<any>(sheetOpt.collection)
-    const list = await collection.list()
     const records: Record<string, unknown>[] = []
-    for (const item of list) {
+    for (const [id, item] of await listWithIds(collection)) {
       const r = item as Record<string, unknown>
       // Same caller-asserted shape as in `toBytes` — see AsXlsxSheetOptions.
       if (sheetOpt.filter && !sheetOpt.filter(r as T)) continue
-      records.push(r)
+      // The `id` column, the label map and every VLOOKUP key on the HUB id,
+      // which a record need not carry as a field (family#151).
+      records.push({ ...r, id })
     }
     const projected = projectRecords(vault, sheetOpt.collection, records, options.redact)
     const base = sheetOpt.columns ?? inferColumns(projected)

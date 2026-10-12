@@ -310,3 +310,16 @@ describe('smart export — record data never reaches a formula unescaped (family
     expect(f1).toBe('"a""),HYPERLINK(""x,b"')
   })
 })
+
+describe('smart export — the id column is the hub id (family#151)', () => {
+  it('a record with no id field still gets its id in column A', async () => {
+    const { vault } = await setup()
+    await vault.collection<{ name: string }>('tags').put('t-1', { name: 'urgent' })
+    const sheet = (await readXlsx(await toBytes(vault, {
+      smart: true,
+      sheets: [{ name: 'tags', collection: 'tags' }],
+    }))).sheets.find((s) => s.name === 'tags')!
+    const h = headerMap(sheet)
+    expect(sheet.rows.slice(1).map((r) => r[h['id']!])).toEqual(['t-1'])
+  })
+})
