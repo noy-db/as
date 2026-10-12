@@ -323,3 +323,21 @@ describe('smart export — the id column is the hub id (family#151)', () => {
     expect(sheet.rows.slice(1).map((r) => r[h['id']!])).toEqual(['t-1'])
   })
 })
+
+describe('readXlsx — inlineStr cells (family#152)', () => {
+  it('reads the text of a t="inlineStr" cell from <is><t>, not <v>', async () => {
+    const { writeZip } = await import('@noy-db/as-zip')
+    const parts = await readZip(await writeXlsx([{ name: 's', header: ['h'], rows: [['x']] }]))
+    const patched = parts.map((p) => {
+      if (p.path !== 'xl/worksheets/sheet1.xml') return { path: p.path, bytes: p.bytes }
+      const xml = DEC.decode(p.bytes).replace(
+        /<c r="A2" t="s"><v>\d+<\/v><\/c>/,
+        '<c r="A2" t="inlineStr"><is><t>inline</t></is></c>',
+      )
+      expect(xml).toContain('inlineStr') // the fixture really changed
+      return { path: p.path, bytes: new TextEncoder().encode(xml) }
+    })
+    const wb = await readXlsx(await writeZip(patched))
+    expect(wb.sheets[0]!.rows[1]!['A']).toBe('inline')
+  })
+})

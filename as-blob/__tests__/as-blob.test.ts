@@ -158,15 +158,10 @@ describe('not-found cases', () => {
 
     const db2 = await createNoydb({ teamStrategy: withTeam(), store: adapter, user: 'owner-01', secret: 'owner-pass', blobsStrategy: withBlobs() })
     const vault = await db2.openVault('acme')
-    try {
-      await toBytes(vault, { collection: 'invoices', id: 'inv-1', slot: 'not-a-slot' })
-    } catch (err) {
-      expect(err).toBeInstanceOf(AsBlobNotFoundError)
-      const e = err as AsBlobNotFoundError
-      expect(e.collection).toBe('invoices')
-      expect(e.id).toBe('inv-1')
-      expect(e.slot).toBe('not-a-slot')
-    }
+    // `rejects`, not try/catch: expects inside a catch pass when nothing throws (family#152).
+    const call = toBytes(vault, { collection: 'invoices', id: 'inv-1', slot: 'not-a-slot' })
+    await expect(call).rejects.toBeInstanceOf(AsBlobNotFoundError)
+    await expect(call).rejects.toMatchObject({ collection: 'invoices', id: 'inv-1', slot: 'not-a-slot' })
     await db2.close()
   })
 })

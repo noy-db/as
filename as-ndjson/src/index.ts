@@ -20,6 +20,7 @@
  */
 
 import type { Vault } from '@noy-db/hub'
+import type { ExportChunk, FormatExportOptions, NoydbFormat } from '@noy-db/hub/as'
 import type { CollectionDescription } from '@noy-db/hub/introspection'
 import { applyListProjection } from '@noy-db/hub/introspection'
 
@@ -62,15 +63,83 @@ export interface AsNDJSONWriteOptions extends AsNDJSONOptions {
   readonly acknowledgeRisks: true
 }
 
+/** Options an NDJSON format instance carries. Read concerns live on `vault.export`. */
+export interface AsNDJSONFormatOptions {
+  /** Include envelope metadata (`_v`, `_ts`, `_by`) on each line. Default `false`. */
+  readonly includeMeta?: boolean
+  /** Name of the routing field. Default `'_schema'`. */
+  readonly schemaField?: string
+}
+
+/** One line for one record — shared by the port encoder and `stream()`. */
+function line(collection: string, record: Record<string, unknown>, options: AsNDJSONFormatOptions): string {
+  const base = options.includeMeta ? record : stripMeta(record)
+  return JSON.stringify({ [options.schemaField ?? '_schema']: collection, ...base })
+}
+
+/** The pure encoder — records in, NDJSON out. Already gated, scoped and redacted by hub. */
+function encodeNdjson(chunks: readonly ExportChunk[], options: AsNDJSONFormatOptions): string {
+  const lines: string[] = []
+  for (const chunk of chunks) {
+    for (const record of chunk.records) lines.push(line(chunk.collection, record as Record<string, unknown>, options))
+  }
+  return lines.join('\n')
+}
+
+/**
+ * The NDJSON format — the `as-*` port instance.
+ *
+ * ```ts
+ * const ndjson = await vault.export(asNdjson(), { collections: ['invoices'] })
+ * const plan = await vault.import(asNdjson(), ndjson, { collection: 'invoices' })
+ * ```
+ *
+ * Requires `formatsStrategy: withFormats()` on `createNoydb`.
+ */
+export function asNdjson(options: AsNDJSONFormatOptions = {}): NoydbFormat<string> {
+  return {
+    id: 'ndjson',
+    extension: 'ndjson',
+    mimeType: 'application/x-ndjson;charset=utf-8',
+    tier: 'plaintext',
+    encode: (chunks) => encodeNdjson(chunks, options),
+    decode: (input) => [{ collection: '', records: parseNdjson(input, 'as-ndjson.decode') }],
+  }
+}
+
+/** Only the keys actually set — `exactOptionalPropertyTypes` is on. */
+function fmtOpts(o: AsNDJSONOptions): AsNDJSONFormatOptions {
+  return {
+    ...(o.includeMeta !== undefined ? { includeMeta: o.includeMeta } : {}),
+    ...(o.schemaField !== undefined ? { schemaField: o.schemaField } : {}),
+  }
+}
+
+function readOpts(o: AsNDJSONOptions): FormatExportOptions {
+  return {
+    ...(o.collections ? { collections: o.collections } : {}),
+    ...(o.redact !== undefined && o.redact !== false
+      ? { redact: o.redact === true ? true : { sensitivity: o.redact.sensitivity } }
+      : {}),
+  }
+}
+
 /**
  * Async iterator emitting one NDJSON-formatted line per record (no
  * trailing newline — the caller decides). The authorization check
  * runs before the first record is produced.
+ *
+ * ⚠️ The ONE entry point that does not go through the format port
+ * (family#152): `NoydbFormat.encode` receives the whole export at once, and
+ * this generator — with `pipe()` on top of it — exists to hold one record in
+ * memory regardless of vault size. So it reads `vault.exportStream` and does
+ * its own gate, allowlist and redaction. Everything else goes through
+ * `vault.export(asNdjson())`. A streaming encode in hub's port would retire
+ * this path.
  */
 export async function* stream(vault: Vault, options: AsNDJSONOptions = {}): AsyncGenerator<string> {
   vault.assertCanExport('plaintext', 'ndjson')
   const allowlist = options.collections ? new Set(options.collections) : null
-  const schemaField = options.schemaField ?? '_schema'
 
   // Cache collection descriptions for redaction
   const descCache = new Map<string, CollectionDescription>()
@@ -88,13 +157,7 @@ export async function* stream(vault: Vault, options: AsNDJSONOptions = {}): Asyn
     }
 
     for (const record of chunk.records) {
-      let base: Record<string, unknown>
-      if (options.includeMeta) {
-        base = record as Record<string, unknown>
-      } else {
-        base = stripMeta(record as Record<string, unknown>)
-      }
-
+      let base = record as Record<string, unknown>
       // Apply redaction if enabled
       if (desc !== undefined) {
         const projectionOpts = typeof options.redact === 'object'
@@ -102,31 +165,41 @@ export async function* stream(vault: Vault, options: AsNDJSONOptions = {}): Asyn
           : undefined
         base = applyListProjection(desc, base, projectionOpts)
       }
-
-      const out: Record<string, unknown> = { [schemaField]: chunk.collection, ...base }
-      yield JSON.stringify(out)
+      yield line(chunk.collection, base, fmtOpts(options))
     }
   }
 }
 
-/** Collect the full NDJSON export into a single string (in-memory). */
+/** The full NDJSON export as one string. Hub gates, reads, scopes and redacts. */
 export async function toString(vault: Vault, options: AsNDJSONOptions = {}): Promise<string> {
-  const lines: string[] = []
-  for await (const line of stream(vault, options)) lines.push(line)
-  return lines.join('\n')
+  return vault.export(asNdjson(fmtOpts(options)), readOpts(options))
 }
 
 /** Browser download wrapping `toString()` in a Blob save-as prompt. */
 export async function download(vault: Vault, options: AsNDJSONDownloadOptions = {}): Promise<void> {
-  const ndjson = await toString(vault, options)
-  const filename = options.filename ?? 'vault-export.ndjson'
-  const blob = new Blob([ndjson + '\n'], { type: 'application/x-ndjson;charset=utf-8' })
+  const fmt = asNdjson(fmtOpts(options))
+  const ndjson = await vault.export(fmt, readOpts(options))
+  const filename = options.filename ?? `vault-export.${fmt.extension}`
+  const blob = new Blob([ndjson + '\n'], { type: fmt.mimeType })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
   a.download = filename
   a.click()
   URL.revokeObjectURL(url)
+}
+
+/**
+ * Node file write. Not in hub because `hub-portable` forbids Node builtins
+ * there; the gate, the read and the redaction all go through hub.
+ */
+export async function write(vault: Vault, path: string, options: AsNDJSONWriteOptions): Promise<void> {
+  if (options.acknowledgeRisks !== true) {
+    throw new Error('as-ndjson.write: acknowledgeRisks: true is required for on-disk plaintext output.')
+  }
+  const ndjson = await vault.export(asNdjson(fmtOpts(options)), readOpts(options))
+  const { writeFile } = await import('node:fs/promises')
+  await writeFile(path, ndjson + '\n', 'utf8')
 }
 
 /**
@@ -199,23 +272,7 @@ export async function fromString(
   const policy: ImportPolicy = options.policy ?? 'merge'
   const idKey = options.idKey ?? 'id'
 
-  const records: Record<string, unknown>[] = []
-  let lineNo = 0
-  for (const raw of ndjson.split('\n')) {
-    lineNo++
-    const line = raw.trim()
-    if (!line) continue
-    let parsed: unknown
-    try {
-      parsed = JSON.parse(line)
-    } catch (err) {
-      throw new Error(`as-ndjson.fromString: malformed JSON on line ${lineNo}: ${(err as Error).message}`)
-    }
-    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      throw new Error(`as-ndjson.fromString: line ${lineNo} is not a JSON object`)
-    }
-    records.push(parsed as Record<string, unknown>)
-  }
+  const records = parseNdjson(ndjson, 'as-ndjson.fromString')
 
   const plan = await diffVault(vault, { [options.collection]: records }, {
     collections: [options.collection],
@@ -247,4 +304,26 @@ export async function fromString(
       })
     },
   }
+}
+
+/** One JSON object per non-empty line — shared by `fromString` and the port decoder. */
+function parseNdjson(ndjson: string, caller: string): Record<string, unknown>[] {
+  const records: Record<string, unknown>[] = []
+  let lineNo = 0
+  for (const raw of ndjson.split('\n')) {
+    lineNo++
+    const text = raw.trim()
+    if (!text) continue
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(text)
+    } catch (err) {
+      throw new Error(`${caller}: malformed JSON on line ${lineNo}: ${(err as Error).message}`)
+    }
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new Error(`${caller}: line ${lineNo} is not a JSON object`)
+    }
+    records.push(parsed as Record<string, unknown>)
+  }
+  return records
 }

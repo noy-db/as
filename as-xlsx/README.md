@@ -172,12 +172,15 @@ Reach for this when the workbook is content-addressed — hashed as an
 attestation, then rebuilt later to check the digest still holds. The
 default is only *accidentally* reproducible.
 
-## Not supported
+## Supported, and not
 
-Pure data export — styles, formulas, merged cells, frozen panes,
-auto-filter, charts, images, drawings are all out of scope. Need
-rich formatting? Use SheetJS / ExcelJS for authoring, and let
-consumers of the exported xlsx apply their own formatting.
+Supported beyond plain values: **number formats** (`numberFormats` on a sheet, or a `styled()` cell),
+**formula cells** (`formula()`, the body without a leading `=`, plus an optional cached value), and
+in smart mode **data-validation dropdowns** and live `VLOOKUP` / `IF(LANG=…)` label columns.
+
+Out of scope: fonts, fills, borders, merged cells, frozen panes, auto-filter, charts, images and
+drawings. Need rich formatting? Use SheetJS / ExcelJS for authoring, and let consumers of the
+exported xlsx apply their own formatting.
 
 ## Related
 
