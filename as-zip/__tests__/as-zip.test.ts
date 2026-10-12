@@ -273,3 +273,39 @@ describe('write() — Node file output', () => {
     }
   })
 })
+
+describe('family#151 — ids come from hub, paths stay inside the archive', () => {
+  async function exporterWith(seed: (vault: Awaited<ReturnType<Awaited<ReturnType<typeof openExporter>>['openVault']>>) => Promise<void>) {
+    const { adapter, db } = await seedVault()
+    await seed(await db.openVault('acme'))
+    await grantExport(adapter)
+    return (await openExporter(adapter)).openVault('acme')
+  }
+
+  it('a collection whose records carry no id field still exports every record and blob', async () => {
+    const vault = await exporterWith(async (v) => {
+      const notes = v.collection<{ text: string }>('notes')
+      await notes.put('n-1', { text: 'first' })
+      await notes.put('n-2', { text: 'second' })
+      await notes.blob('n-1').put('raw', PDF, { mimeType: 'application/pdf', compress: false })
+    })
+    const bytes = await toBytes(vault, { records: { collection: 'notes' } })
+    const manifest = JSON.parse(new TextDecoder().decode(readZipFile(bytes, 'manifest.json')!)) as ArchiveManifest
+    expect(manifest.recordCount).toBe(2)
+    expect(manifest.attachmentCount).toBe(1)
+    const records = JSON.parse(new TextDecoder().decode(readZipFile(bytes, 'records.json')!)) as Array<Record<string, unknown>>
+    expect(records.map((r) => r._id).sort()).toEqual(['n-1', 'n-2'])
+    expect(listZipPaths(bytes)).toContain('attachments/n-1/raw')
+  })
+
+  it.each(['..', '.'])('a record id of %j never becomes a traversal segment', async (id) => {
+    const vault = await exporterWith(async (v) => {
+      const c = v.collection<{ id: string }>('odd')
+      await c.put(id, { id })
+      await c.blob(id).put('..', PNG, { mimeType: 'image/png', compress: false })
+    })
+    const paths = listZipPaths(await toBytes(vault, { records: { collection: 'odd' } }))
+    const attachments = paths.filter((p) => p.startsWith('attachments/'))
+    expect(attachments).toEqual(['attachments/_/_'])
+  })
+})

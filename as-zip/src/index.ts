@@ -190,12 +190,9 @@ export async function toBytes<T = unknown>(vault: Vault, options: AsZipOptions<T
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const collection = vault.collection<any>(collectionName)
 
-  // Pull every id the caller can see + the decrypted record for each.
-  const ids = await collection.list().then((rs) => extractIds(rs))
+  // Every record the caller can see, keyed by its hub id.
   const records: Array<{ id: string; record: unknown }> = []
-  for (const id of ids) {
-    const r = await collection.get(id)
-    if (r === null) continue
+  for (const [id, r] of await listWithIds(collection)) {
     // `r` is the decrypted record as it exists at runtime: a plain object.
     // `T` is the caller's assertion about that shape, unverifiable here — the
     // same contract `vault.collection<T>()` already makes. The cast is where
@@ -352,9 +349,11 @@ export type AsZipImportPlan = ImportPlan
  * `records.json` from it, and return an `ImportPlan` whose `apply()`
  * writes the changes through the normal collection API.
  *
- * Pairs with `toBytes` for round-trip workflows. The records JSON
- * format matches what `toBytes` writes — array of records under
- * the configured collection's id key.
+ * Pairs with `toBytes` for round-trip workflows. `toBytes` writes each
+ * record with its hub id as `_id`, but the diff keys on `idKey` (default
+ * `'id'`) on BOTH sides — the archive and the live vault — so a collection
+ * whose records carry no id field cannot be reconciled here. That half is
+ * hub's `diffVault` (family#151).
  */
 export async function fromBytes(
   vault: Vault,
@@ -415,26 +414,27 @@ export async function fromBytes(
 // ── internals ─────────────────────────────────────────────────────
 
 /**
- * Collection.list() returns an array of records OR record ids
- * depending on the call shape. as-zip always needs ids + records
- * separately; we call list() to materialise records then build the
- * id list from `_id`/record identity. Fall back to treating the
- * list as ids directly when records don't carry a canonical id.
+ * `[id, record]` for every record the caller can see.
+ *
+ * The id is not derivable from a record (core#103), so reading it off
+ * `rec.id ?? rec._id` exported an EMPTY archive for a collection whose records
+ * carry neither — while the gate, the manifest and the write all succeeded
+ * (family#151). `listEntries()` returns the hub id itself.
+ *
+ * ⚠️ Read defensively, not by name: `listEntries` first shipped in hub 0.9.0
+ * and the published peer floor is still `^0.7.0`. A typed call would fail
+ * `peer-floor` with TS2339. Below 0.9 the old field-based read is all there is.
  */
-function extractIds(list: unknown[]): string[] {
-  const out: string[] = []
-  for (const item of list) {
-    if (typeof item === 'string') {
-      out.push(item)
-      continue
-    }
-    if (item && typeof item === 'object') {
-      const rec = item as Record<string, unknown>
-      // Canonical — a `.id` field. Falls back to `_id` for
-      // consumers that store ids in a mongo-style field.
-      const id = rec.id ?? rec._id
-      if (typeof id === 'string') out.push(id)
-    }
+async function listWithIds(collection: {
+  list(): Promise<unknown[]>
+}): Promise<Array<readonly [string, unknown]>> {
+  const c = collection as { listEntries?: () => Promise<Array<readonly [string, unknown]>> }
+  if (typeof c.listEntries === 'function') return c.listEntries()
+  const out: Array<readonly [string, unknown]> = []
+  for (const item of await collection.list()) {
+    const rec = item as Record<string, unknown> | null
+    const id = rec?.id ?? rec?._id
+    if (typeof id === 'string') out.push([id, item])
   }
   return out
 }
@@ -461,5 +461,8 @@ function toPojo(value: unknown): unknown {
  */
 function sanitiseFsSegment(s: string): string {
   // eslint-disable-next-line no-control-regex
-  return s.replace(/[/\\:*?"<>|\x00-\x1f]/g, '_') || '_'
+  const out = s.replace(/[/\\:*?"<>|\x00-\x1f]/g, '_')
+  // `.` and `..` survive the replace and are traversal on an extractor that
+  // resolves paths (zip-slip, family#151); empty would collapse the segment.
+  return out === '' || out === '.' || out === '..' ? '_' : out
 }

@@ -9,9 +9,9 @@
  *      asymmetric default reflects asymmetric risk: a bundle is inert
  *      without the KEK, so owner backups don't need the per-format
  *      friction of the plaintext tier.
- *   2. The usual audit-ledger entry (`type: 'as-export'`,
- *      `encrypted: true`) so regulators see every bundle egress even
- *      though contents stay encrypted.
+ *   2. ⚠️ NO audit-ledger entry — neither this package nor hub writes
+ *      one (family#151). A caller that needs every bundle egress on
+ *      record writes its own `type: 'as-export'` entry after the call.
  *   3. Ergonomic browser-download / Node-file-write / in-memory-bytes
  *      helpers that parallel the plaintext-tier siblings.
  *

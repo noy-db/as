@@ -100,7 +100,7 @@ export type AsJSONDocument = Record<string, readonly Record<string, unknown>[]>
 
 /**
  * Serialise the vault as a JSON string. Pure operation — no side
- * effects beyond the authorization check and audit ledger write.
+ * effects beyond the authorization check.
  */
 /**
  * The pure encoders — records in, JSON out. Already gated and already redacted
