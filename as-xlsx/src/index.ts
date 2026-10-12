@@ -365,7 +365,7 @@ export interface MultiVaultXlsxEntry {
   readonly sheets: readonly AsXlsxSheetOptions[]
   /**
    * Optional per-collection id allowlist (e.g. from walkCrossVaultClosure).
-   * When set, only rows whose `id` appears in the set are exported for that
+   * When set, only rows whose hub id appears in the set are exported for that
    * collection. Omit to export all rows.
    */
   readonly closure?: ReadonlyMap<string, ReadonlySet<string>>
@@ -446,14 +446,15 @@ export async function toBytesMultiVault(
     const prefix = entry.label ?? entry.vault.name
     for (const s of entry.sheets) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const all = await entry.vault.collection<any>(s.collection).list()
+      const all = await listWithIds(entry.vault.collection<any>(s.collection))
       const records: Record<string, unknown>[] = []
-      for (const item of all) {
+      for (const [id, item] of all) {
         const r = item as Record<string, unknown>
         // Closure filter: if a closure is supplied for this collection, keep
-        // only rows whose id is in the allowlist.
+        // only rows whose HUB id is in the allowlist — a record need not
+        // carry its id as a field (family#152).
         const allow = entry.closure?.get(s.collection)
-        if (allow && !allow.has(String((r as { id?: unknown }).id))) continue
+        if (allow && !allow.has(id)) continue
         // User-supplied row predicate (same semantics as single-vault toBytes).
         if (s.filter && !s.filter(r)) continue
         records.push(r)

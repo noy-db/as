@@ -525,3 +525,26 @@ describe('toBytesMultiVault — numberFormats (family#152)', () => {
     expect(await exportBills(denormalize)).toContain('#,##0.00')
   })
 })
+
+// family#152 (folded from the #151 review) — the closure allowlist holds HUB
+// ids, and the id is not derivable from a record (core#103).
+describe('toBytesMultiVault — closure keys on the hub id (family#152)', () => {
+  it('keeps a closure-allowed record that carries no id field', async () => {
+    const { db, adapter } = await seedTwoVaults()
+    const dir = await db.openVault('directory')
+    await dir.collection<{ name: string }>('labels').put('l1', { name: 'Kept Label' })
+    await dir.collection<{ name: string }>('labels').put('l2', { name: 'Dropped Label' })
+    await grantXlsxBothVaults(adapter)
+    const db2 = await createNoydb({ teamStrategy: withTeam(), store: adapter, user: 'owner-01', secret: 'owner-pass' })
+    const bytes = await toBytesMultiVault([{
+      vault: await db2.openVault('directory'),
+      sheets: [{ name: 'labels', collection: 'labels', columns: ['name'] }],
+      closure: new Map([['labels', new Set(['l1'])]]),
+    }])
+    const shared = readZipFile(bytes, 'xl/sharedStrings.xml')!
+    expect(shared).toContain('>Kept Label<')
+    expect(shared).not.toContain('>Dropped Label<')
+    await db.close()
+    await db2.close()
+  })
+})
