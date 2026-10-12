@@ -619,6 +619,15 @@ function asCached(v: unknown): string | number | boolean {
 }
 
 /**
+ * A locale key becomes a string literal inside `IF(LANG="…")` in every display
+ * cell, and a dropdown value on the Settings sheet. It comes from RECORD DATA
+ * (the keys of an i18n map), so anything beyond a tag-shaped key is dropped
+ * rather than escaped: `en",HYPERLINK("…"),"` would otherwise be a live formula
+ * (family#150).
+ */
+const LOCALE_KEY = /^[A-Za-z0-9_-]+$/
+
+/**
  * Smart-workbook builder (#414 P1+P2): id-first sheets, FK→VLOOKUP label columns,
  * a `_manifest` index, and — when i18n fields are declared — per-locale columns
  * with a display column driven live by a global `LANG` named range on a
@@ -665,7 +674,7 @@ async function buildSmartSheets<T = unknown>(
     for (const f of i18nFields) {
       for (const r of projected) {
         const v = r[f]
-        if (v && typeof v === 'object') for (const loc of Object.keys(v)) localeSet.add(loc)
+        if (v && typeof v === 'object') for (const loc of Object.keys(v)) if (LOCALE_KEY.test(loc)) localeSet.add(loc)
       }
     }
     mats.push({ opt: sheetOpt, records: projected, cols, labelMap, i18nFields })
@@ -681,7 +690,7 @@ async function buildSmartSheets<T = unknown>(
     }
   }
   for (const entries of dictEntries.values()) {
-    for (const e of entries) for (const loc of Object.keys(e.labels)) localeSet.add(loc)
+    for (const e of entries) for (const loc of Object.keys(e.labels)) if (LOCALE_KEY.test(loc)) localeSet.add(loc)
   }
 
   const locales = [...localeSet].sort()

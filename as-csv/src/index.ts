@@ -120,12 +120,22 @@ function readOpts(o: AsCSVOptions): FormatExportOptions {
   }
 }
 
+/**
+ * A cell starting with `= + - @`, tab or CR is executed as a formula when the
+ * CSV is opened in Excel, LibreOffice or Sheets (HYPERLINK / DDE exfiltration).
+ * Such cells get one leading `'`. Leading `'`s are counted in the match so the
+ * guard is invertible: `decodeCsv` strips exactly one from any cell this
+ * pattern matches, and a value that already began with `'=` round-trips.
+ */
+const FORMULA_GUARDED = /^'*[=+\-@\t\r]/
+
 function escapeField(value: unknown): string {
   if (value === null || value === undefined) return ''
   if (typeof value === 'number' || typeof value === 'boolean') return String(value)
   if (value instanceof Date) return value.toISOString()
-  const s =
+  const raw =
     typeof value === 'string' ? value : JSON.stringify(value)
+  const s = FORMULA_GUARDED.test(raw) ? `'${raw}` : raw
   if (/[",\r\n]/.test(s)) {
     return `"${s.replace(/"/g, '""')}"`
   }
@@ -188,7 +198,7 @@ function decodeCsv(csv: string, options: AsCSVFormatOptions): readonly DecodedCh
   const types = options.columnTypes ?? {}
   const rows = parseCSV(csv)
   if (rows.length === 0) return [{ collection: '', records: [] }]
-  const header = rows[0] ?? []
+  const header = (rows[0] ?? []).map(unguard)
   const records: Record<string, unknown>[] = []
   for (let r = 1; r < rows.length; r++) {
     const row = rows[r]!
@@ -196,7 +206,7 @@ function decodeCsv(csv: string, options: AsCSVFormatOptions): readonly DecodedCh
     const record: Record<string, unknown> = {}
     for (let c = 0; c < header.length; c++) {
       const col = header[c] ?? ''
-      record[col] = coerceCell(row[c] ?? '', types[col])
+      record[col] = coerceCell(unguard(row[c] ?? ''), types[col])
     }
     records.push(record)
   }
@@ -235,6 +245,11 @@ export function asCsv(options: AsCSVFormatOptions = {}): NoydbFormat<string> {
     encode: (chunks) => encodeCsv(chunks, options),
     decode: (input) => decodeCsv(input, options),
   }
+}
+
+/** Inverse of the encoder's formula guard — see `FORMULA_GUARDED`. */
+function unguard(cell: string): string {
+  return FORMULA_GUARDED.test(cell) && cell.startsWith("'") ? cell.slice(1) : cell
 }
 
 function coerceCell(cell: string, type?: 'string' | 'number' | 'boolean'): unknown {

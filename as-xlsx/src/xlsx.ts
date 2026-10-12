@@ -225,7 +225,9 @@ export async function writeXlsx(
     if (sheet.validations && sheet.validations.length > 0) {
       lines.push(`<dataValidations count="${sheet.validations.length}">`)
       for (const dv of sheet.validations) {
-        const f1 = dv.formula1 ?? `"${(dv.values ?? []).join(',')}"`
+        // An explicit list is a quoted formula string: `"` inside a value must be
+        // doubled or it closes the literal and the rest parses as formula (family#150).
+        const f1 = dv.formula1 ?? `"${(dv.values ?? []).map((v) => v.replace(/"/g, '""')).join(',')}"`
         lines.push(
           `<dataValidation type="list" allowBlank="1" showInputMessage="1" showErrorMessage="1" sqref="${escapeXmlAttr(dv.sqref)}"><formula1>${escapeXmlText(f1)}</formula1></dataValidation>`,
         )
