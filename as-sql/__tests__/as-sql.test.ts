@@ -123,3 +123,48 @@ describe('as-sql', () => {
     await expect(vault.export(asSql(), {})).rejects.toBeInstanceOf(ExportCapabilityError)
   })
 })
+
+// family#149 — the encoder is pure, so these drive `encode` with synthetic
+// chunks: the row counts that matter (> 100) are cheap here and slow via a vault.
+function chunk(collection: string, records: Record<string, unknown>[]) {
+  return { collection, schema: null, refs: {}, records, dictionaries: {} } as never
+}
+function encode(records: Record<string, unknown>[], opts: Parameters<typeof asSql>[0] = {}) {
+  return asSql(opts).encode([chunk('t', records)]) as string
+}
+const numbers = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `r${i}`, n: i }))
+
+describe('as-sql — literals past the first 100 rows (family#149)', () => {
+  it('a string in row 101 of a numeric column is quoted, never emitted raw', () => {
+    const sql = encode([...numbers(100), { id: 'evil', n: '1); DROP TABLE t; --' }])
+    expect(sql).not.toContain('VALUES (\'evil\', 1); DROP TABLE')
+    expect(sql).toContain("'1); DROP TABLE t; --'")
+    expect(sql).toMatch(/"n" TEXT/)
+  })
+
+  it('a column first seen after row 100 is declared and filled, not dropped', () => {
+    const sql = encode([...numbers(100), { id: 'late', n: 1, extra: 'x' }])
+    expect(sql).toMatch(/"extra" TEXT/)
+    expect(sql).toContain("'x'")
+  })
+
+  it('a key missing only after row 100 makes the column nullable', () => {
+    const sql = encode([...numbers(100), { id: 'gap' }])
+    expect(sql).toMatch(/"n" INTEGER,?\n/)
+    expect(sql).not.toMatch(/"n" INTEGER NOT NULL/)
+  })
+})
+
+describe('as-sql — mysql backslash escaping (family#149)', () => {
+  it('escapes a trailing backslash so the literal still closes', () => {
+    const sql = encode([{ id: 'a', s: "foo\\'); DROP TABLE t; --" }], { dialect: 'mysql' })
+    expect(sql).toContain("'foo\\\\''); DROP TABLE t; --'")
+  })
+
+  it('leaves backslashes alone for postgres and sqlite (standard strings)', () => {
+    for (const dialect of ['postgres', 'sqlite'] as const) {
+      expect(encode([{ id: 'a', s: 'a\\b' }], { dialect })).toContain("'a\\b'")
+    }
+  })
+})
+

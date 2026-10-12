@@ -6,8 +6,8 @@
  * SQL query frontend — it's the migration bridge for consumers moving
  * noy-db data into Postgres, MySQL, or SQLite.
  *
- * Column types are inferred from value types in the first 100 records
- * per collection. Every record's row uses parameterless inline-literal
+ * Column types are inferred from value types across every record in the
+ * collection. Every record's row uses parameterless inline-literal
  * INSERT (no prepared statements) so the dump loads with a single
  * `psql -f`, `mysql <`, or `sqlite3 < dump.sql` invocation.
  *
@@ -33,7 +33,11 @@ export interface AsSQLOptions {
   readonly mode?: SqlMode
   /** Map collection name → table name. Default identity. */
   readonly tableNames?: (collection: string) => string
-  /** Include `_noydb_version` / `_noydb_ts` metadata columns. Default `false`. */
+  /**
+   * Include `_noydb_version` / `_noydb_ts` metadata columns. Default `false`.
+   * ⚠️ The columns are declared but every value is `NULL`: hub's export
+   * records carry no envelope `_v` / `_ts` to fill them from (family#149).
+   */
   readonly metadataColumns?: boolean
 
   /**
@@ -121,7 +125,11 @@ export interface AsSQLFormatOptions {
   readonly mode?: SqlMode
   /** Map collection name → table name. Default identity. */
   readonly tableNames?: (collection: string) => string
-  /** Include `_noydb_version` / `_noydb_ts` metadata columns. Default `false`. */
+  /**
+   * Include `_noydb_version` / `_noydb_ts` metadata columns. Default `false`.
+   * ⚠️ The columns are declared but every value is `NULL`: hub's export
+   * records carry no envelope `_v` / `_ts` to fill them from (family#149).
+   */
   readonly metadataColumns?: boolean
   /**
    * Collection allowlist, kept here as well as on `vault.export` because the
@@ -199,8 +207,9 @@ interface ColumnSchema {
 
 function inferSchema(records: readonly Record<string, unknown>[], includeMeta: boolean): ColumnSchema[] {
   const observed = new Map<string, { types: Set<SqlType>; nullable: boolean }>()
-  const sample = records.slice(0, 100) // sample up to 100 rows for type inference
-  for (const rec of sample) {
+  // Every row, not a sample: formatLiteral trusts the inferred type, so a
+  // value the inference never saw is emitted unquoted (family#149).
+  for (const rec of records) {
     for (const key of Object.keys(rec)) {
       if (!observed.has(key)) observed.set(key, { types: new Set(), nullable: false })
       const slot = observed.get(key)!
@@ -296,7 +305,10 @@ function stringifyScalar(value: unknown): string {
 
 function quoteString(dialect: SqlDialect, s: string): string {
   // Both standard SQL and common dialects use '' to escape single quotes.
-  const escaped = s.replace(/'/g, "''")
+  // MySQL's default sql_mode also treats `\` as an escape, so `foo\'` would
+  // never close the literal there — double backslashes first, as mysqldump does.
+  const unslashed = dialect === 'mysql' ? s.replace(/\\/g, '\\\\') : s
+  const escaped = unslashed.replace(/'/g, "''")
   return `'${escaped}'`
 }
 
