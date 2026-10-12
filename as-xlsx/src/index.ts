@@ -502,11 +502,12 @@ export async function toBytesMultiVault(
   for (const { prefix, sheetOpt: s, records } of loaded) {
     const baseColumns = s.columns ?? inferColumns(records)
     const denormDefs = s.denormalize ?? []
+    const fmts = s.numberFormats
 
     if (denormDefs.length === 0) {
       // Fast path: no denorm — identical to Task 1 behaviour.
       const sheetName = `${prefix}${sep}${s.name}`
-      allSheets.push(buildFlatSheet(sheetName, baseColumns, records))
+      allSheets.push(buildFlatSheet(sheetName, baseColumns, records, fmts))
       manifestRows.push([prefix, s.collection, records.length])
       continue
     }
@@ -515,7 +516,7 @@ export async function toBytesMultiVault(
     const allColumns = [...baseColumns, ...denormDefs.map((d) => d.column)]
     const sheetName = `${prefix}${sep}${s.name}`
     const rows = records.map((r) => {
-      const baseCells = baseColumns.map((c) => r[c] ?? null)
+      const baseCells = baseColumns.map((c) => numberFormatted(r[c] ?? null, fmts?.[c]))
       const denormCells = denormDefs.map((d) => {
         const idxKey = `${d.from.label}/${d.from.collection}`
         const idx = denormIndex.get(idxKey)

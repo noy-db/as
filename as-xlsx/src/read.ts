@@ -217,8 +217,11 @@ function readSheet(bytes: Uint8Array, sharedStrings: readonly string[]): ReadXls
       if (!ref) continue
       const col = letterFromRef(ref)
       const t = cellObj['@_t']
-      const v = cellObj['v']
-      const text = textValue(v)
+      // An inline string carries its text in <is><t>, never in <v> — reading
+      // <v> made the inlineStr branch below unreachable (family#152).
+      const text = t === 'inlineStr'
+        ? textValue((cellObj['is'] as { t?: unknown } | undefined)?.t)
+        : textValue(cellObj['v'])
       if (text === '') {
         if (t === 's') {
           out[col] = ''
@@ -239,8 +242,8 @@ function readSheet(bytes: Uint8Array, sharedStrings: readonly string[]): ReadXls
       } else if (t === 'b') {
         out[col] = text === '1'
       } else if (t === 'str' || t === 'inlineStr') {
-        // Inline strings — writer never emits these but readers should
-        // accept them since some upstream tools default to inline.
+        // Formula string results and inline strings — the writer never emits
+        // inlineStr, but some upstream tools default to it.
         out[col] = text
       } else {
         // Numeric cell (no `t` attribute, or t="n").

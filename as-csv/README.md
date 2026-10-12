@@ -27,7 +27,7 @@ Every call checks `vault.assertCanExport('plaintext', 'csv')` **before decryptin
 
 ## Usage
 
-### `toString(vault, options)` — returns CSV string
+### `vault.export(asCsv(), options)` — returns a CSV string
 
 ```ts
 import { asCsv } from '@noy-db/as-csv'

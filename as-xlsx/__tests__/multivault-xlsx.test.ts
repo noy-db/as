@@ -494,3 +494,34 @@ describe('toBytesMultiVault — denormalized columns', () => {
     await db2.close()
   })
 })
+
+// family#152 — numberFormats was documented as applying "in every mode" (#8)
+// but toBytesMultiVault never passed it on, on either path.
+describe('toBytesMultiVault — numberFormats (family#152)', () => {
+  async function exportBills(denormalize: boolean) {
+    const { db, adapter } = await seedTwoVaults()
+    await grantXlsxBothVaults(adapter)
+    const db2 = await createNoydb({ teamStrategy: withTeam(), store: adapter, user: 'owner-01', secret: 'owner-pass' })
+    const primaryVault = await db2.openVault('primary')
+    const dirVault = await db2.openVault('directory')
+    const bytes = await toBytesMultiVault([
+      {
+        vault: primaryVault,
+        sheets: [{
+          name: 'bills', collection: 'bills', columns: ['id', 'entityId', 'amount'],
+          numberFormats: { amount: '#,##0.00' },
+          ...(denormalize
+            ? { denormalize: [{ column: 'entity', localField: 'entityId', from: { label: 'directory', collection: 'entities', keyField: 'id', pick: 'name' } } satisfies MultiVaultDenormColumn] }
+            : {}),
+        }],
+      },
+      { vault: dirVault, sheets: [{ name: 'entities', collection: 'entities', columns: ['id', 'name'] }] },
+    ])
+    await db.close()
+    return readZipFile(bytes, 'xl/styles.xml') ?? ''
+  }
+
+  it.each([false, true])('applies the declared number format (denormalize: %s)', async (denormalize) => {
+    expect(await exportBills(denormalize)).toContain('#,##0.00')
+  })
+})

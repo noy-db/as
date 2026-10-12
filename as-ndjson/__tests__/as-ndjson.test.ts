@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { NoydbStore, EncryptedEnvelope, VaultSnapshot } from '@noy-db/hub'
 import { ConflictError, ExportCapabilityError, createNoydb } from '@noy-db/hub'
-import { toString, stream, pipe } from '../src/index.js'
+import { toString, stream, pipe, asNdjson } from '../src/index.js'
 import { withTeam } from '@noy-db/hub/team'
+import { withFormats } from '@noy-db/hub/as'
 
 function toMemory(): NoydbStore {
   const store = new Map<string, Map<string, Map<string, EncryptedEnvelope>>>()
@@ -43,7 +44,7 @@ function toMemory(): NoydbStore {
 
 async function seed(grantFormats: readonly ('json' | 'ndjson' | 'csv')[] = ['ndjson']) {
   const adapter = toMemory()
-  const db = await createNoydb({ teamStrategy: withTeam(), store: adapter, user: 'owner', secret: 'pw' })
+  const db = await createNoydb({ formatsStrategy: withFormats(), teamStrategy: withTeam(), store: adapter, user: 'owner', secret: 'pw' })
   const v1 = await db.openVault('acme')
   await v1.collection<{ id: string; amount: number }>('invoices').put('i1', { id: 'i1', amount: 100 })
   await v1.collection<{ id: string; amount: number }>('invoices').put('i2', { id: 'i2', amount: 250 })
@@ -54,7 +55,7 @@ async function seed(grantFormats: readonly ('json' | 'ndjson' | 'csv')[] = ['ndj
     exportCapability: { plaintext: grantFormats },
   })
   await db.close()
-  const db2 = await createNoydb({ teamStrategy: withTeam(), store: adapter, user: 'owner', secret: 'pw' })
+  const db2 = await createNoydb({ formatsStrategy: withFormats(), teamStrategy: withTeam(), store: adapter, user: 'owner', secret: 'pw' })
   const vault = await db2.openVault('acme')
   return { db: db2, vault }
 }
@@ -119,5 +120,24 @@ describe('as-ndjson', () => {
     expect(written).toHaveLength(3)
     expect(written.every(line => line.endsWith('\n'))).toBe(true)
     expect(ended).toBe(true)
+  })
+})
+
+describe('asNdjson() — the format port instance (family#152)', () => {
+  it('encode → decode round-trips the records, one line each', async () => {
+    const fmt = asNdjson()
+    const chunk = { collection: 'invoices', schema: null, refs: {}, records: [{ id: 'i1', amount: 1 }, { id: 'i2', amount: 2 }], dictionaries: {} } as never
+    const text = (await fmt.encode([chunk])) as string
+    expect(text.split('\n')).toHaveLength(2)
+    const [decoded] = await fmt.decode!(text)
+    expect(decoded!.records).toEqual([
+      { _schema: 'invoices', id: 'i1', amount: 1 },
+      { _schema: 'invoices', id: 'i2', amount: 2 },
+    ])
+  })
+
+  it('toString goes through vault.export — same bytes as the port instance', async () => {
+    const { vault } = await seed()
+    expect(await toString(vault)).toBe(await vault.export(asNdjson(), {}))
   })
 })

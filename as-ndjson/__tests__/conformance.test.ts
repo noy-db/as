@@ -8,7 +8,8 @@ import { runFormatConformanceTests, observeStore, type ObservedStore } from '@no
 import type { NoydbStore, EncryptedEnvelope, VaultSnapshot, Vault } from '@noy-db/hub'
 import { ConflictError, createNoydb } from '@noy-db/hub'
 import { withTeam } from '@noy-db/hub/team'
-import { toString, download, stream } from '../src/index.js'
+import { withFormats } from '@noy-db/hub/as'
+import { toString, download, stream, write, asNdjson } from '../src/index.js'
 
 function toMemory(): NoydbStore {
   const store = new Map<string, Map<string, Map<string, EncryptedEnvelope>>>()
@@ -56,10 +57,12 @@ async function seededVaultWithStore(): Promise<{ vault: Vault; store: ObservedSt
   // #1211 — wrapped where the store is CREATED; a wrapper applied after the
   // vault exists intercepts nothing (the vault captured its store already).
   const store = observeStore(toMemory())
-  const opts = { teamStrategy: withTeam(), store, user: 'owner-01', secret: 'owner-pass' }
+  const opts = { formatsStrategy: withFormats(), teamStrategy: withTeam(), store, user: 'owner-01', secret: 'owner-pass' }
   const seed = await createNoydb(opts)
   const seeded = await seed.openVault('acme')
   await seeded.collection('invoices').put('inv-1', { id: 'inv-1', client: 'Globex', amount: 1500 })
+  // A second collection, so the scope case below has something to leave out.
+  await seeded.collection('payments').put('p-1', { id: 'p-1', invoiceId: 'inv-1', amount: 1500 })
   await seed.grant('acme', {
     userId: 'owner-01', displayName: 'Owner', role: 'owner',
     secret: 'owner-pass',
@@ -82,6 +85,20 @@ runFormatConformanceTests('as-ndjson', {
     // the un-iterated generator would assert on an object that has not run —
     // an entry point checked without being called.
     { name: 'stream', run: async (vault) => { const out: string[] = []; for await (const line of stream(vault)) out.push(line); return out } },
+    { name: 'vault.export(asNdjson())', run: (vault) => vault.export(asNdjson(), { collections: ['invoices'] }) },
+    { name: 'write', run: (vault) => write(vault, '/tmp/conformance.ndjson', { collections: ['invoices'], acknowledgeRisks: true }) },
   ],
+  // The cast IS the point: the kit proves the RUNTIME guard refuses a call that
+  // omits `acknowledgeRisks`, which a type-clean call cannot express.
+  writeWithoutAcknowledgement: (vault, path) =>
+    write(vault, path, { collections: ['invoices'] } as never),
+  // `stream` is deliberately off the port (it is the O(one record) path), so
+  // the scope case pins the port-routed `download`.
+  scope: {
+    name: 'download',
+    scoped: (vault) => download(vault, { collections: ['invoices'] }),
+    expected: ['invoices'],
+    unscoped: (vault) => download(vault, {}),
+  },
 
 })
