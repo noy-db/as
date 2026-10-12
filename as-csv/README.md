@@ -86,6 +86,17 @@ interface AsCSVOptions {
 
 Dates render as ISO strings rather than locale-formatted — spreadsheet consumers can re-parse if needed. For locale-formatted dates with Thai BE calendar, pipe through `@noy-db/locale-th` before exporting.
 
+## Formula-injection guard
+
+A string cell beginning with `=`, `+`, `-`, `@`, a tab or a carriage return is written with one
+leading `'`, so a spreadsheet opening the file shows it as text instead of executing it as a formula
+(`=HYPERLINK(…)`, DDE). Numbers are never touched, so `-5` stays `-5`; the string `"-5"` becomes
+`'-5`. Header cells are guarded the same way.
+
+`asCsv().decode` removes exactly that one `'` again, so export → import round-trips, including values
+that already began with `'=`. A file from another tool whose cells start with `'` followed by one of
+those characters loses that first `'` on import.
+
 ## Audit
 
 This package does NOT write an audit-ledger entry yet — that lands with the full vault-level gated wrappers in a #249 follow-up. For now, applications using `@noy-db/as-csv` should write their own `type: 'as-export'` ledger entry after each call:

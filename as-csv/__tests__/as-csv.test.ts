@@ -190,3 +190,33 @@ describe('write() guard', () => {
     await db.close()
   })
 })
+
+// family#150 — the encoder is pure, so these drive encode/decode directly.
+describe('as-csv — formula injection (family#150)', () => {
+  const chunk = (records: Record<string, unknown>[]) =>
+    ({ collection: 't', schema: null, refs: {}, records, dictionaries: {} }) as never
+  const encode = (records: Record<string, unknown>[]) => asCsv().encode([chunk(records)]) as string
+
+  it.each(['=HYPERLINK("http://evil")', '+1+1', '-2+3', '@SUM(A1)', '\tx', '\rx'])(
+    'prefixes a cell starting with a formula trigger: %j',
+    (cell) => {
+      const line = encode([{ v: cell }]).split('\n').slice(1).join('\n')
+      expect(line.replace(/^"/, '').startsWith(`'${cell[0]}`)).toBe(true)
+    },
+  )
+
+  it('leaves numbers, including negative ones, alone', () => {
+    expect(encode([{ v: -5 }])).toBe('v\n-5')
+  })
+
+  it('guards the header row too', () => {
+    expect(encode([{ '=cmd': 1 }]).split('\n')[0]).toBe("'=cmd")
+  })
+
+  it('round-trips: decode removes exactly the guard it added', async () => {
+    const values = ['=1+1', "'=already", "''=two", "'plain", 'plain', '-5']
+    const csv = encode(values.map((v, i) => ({ id: `r${i}`, v })))
+    const decoded = await asCsv().decode!(csv)
+    expect(decoded[0]!.records.map((r) => (r as Record<string, unknown>)['v'])).toEqual(values)
+  })
+})

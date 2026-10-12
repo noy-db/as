@@ -277,3 +277,36 @@ describe('#414 P1 — smart export', () => {
     expect(wb.sheets[0]!.rows[1]!['A']).toBe(3) // cached value readable
   })
 })
+
+describe('smart export — record data never reaches a formula unescaped (family#150)', () => {
+  async function sheetXmls(bytes: Uint8Array): Promise<string[]> {
+    return (await readZip(bytes))
+      .filter((p) => /xl\/worksheets\/sheet\d+\.xml/.test(p.path))
+      .map((p) => DEC.decode(p.bytes))
+  }
+
+  it('an i18n map key that is not a locale tag is not interpolated into IF(LANG=…)', async () => {
+    const { vault } = await setup()
+    const evil = 'en",HYPERLINK("http://evil.example"),"'
+    await vault.collection<{ id: string; name: Record<string, string> }>('products')
+      .put('p1', { id: 'p1', name: { en: 'Widget', [evil]: 'x' } })
+    const xmls = await sheetXmls(await toBytes(vault, {
+      smart: true,
+      sheets: [{ name: 'products', collection: 'products', i18nFields: ['name'] }],
+    }))
+    expect(xmls.join('')).toContain('IF(LANG="en",')
+    expect(xmls.join('')).not.toContain('HYPERLINK')
+  })
+
+  it('a dropdown value containing a double quote is escaped inside formula1', async () => {
+    const { vault } = await setup()
+    const xmls = await sheetXmls(await toBytes(vault, {
+      smart: true,
+      sheets: [
+        { name: 'clients', collection: 'clients', dropdowns: { name: ['a"),HYPERLINK("x', 'b'] } },
+      ],
+    }))
+    const f1 = xmls.join('').match(/<formula1>([^<]*)<\/formula1>/)![1]!
+    expect(f1).toBe('"a""),HYPERLINK(""x,b"')
+  })
+})
