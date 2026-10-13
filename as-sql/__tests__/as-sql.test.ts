@@ -168,3 +168,62 @@ describe('as-sql — mysql backslash escaping (family#149)', () => {
   })
 })
 
+
+type Meta = { version: number; ts: string }
+function metaChunk(collection: string, records: Record<string, unknown>[], envelopeMeta?: Meta[]) {
+  return { collection, schema: null, refs: {}, records, dictionaries: {}, ...(envelopeMeta ? { envelopeMeta } : {}) } as never
+}
+const values = (sql: string) => sql.split('\n').filter((l) => l.startsWith('INSERT')).map((l) => l.slice(l.indexOf('VALUES')))
+
+describe('as-sql — envelope metadata columns (family#166)', () => {
+  // ⭐ Records with NO id field, and meta that differs per row: an implementation
+  // keying meta by a record field (family#151's defect) cannot pass this.
+  it('fills _noydb_version / _noydb_ts from envelopeMeta, by position', () => {
+    const sql = asSql({ metadataColumns: true, mode: 'data-only' }).encode([
+      metaChunk('notes', [{ text: 'a' }, { text: 'b' }], [
+        { version: 3, ts: '2026-10-01T00:00:00.000Z' },
+        { version: 7, ts: '2026-10-02T00:00:00.000Z' },
+      ]),
+    ]) as string
+    expect(values(sql)).toEqual([
+      "VALUES ('a', 3, '2026-10-01T00:00:00.000Z');",
+      "VALUES ('b', 7, '2026-10-02T00:00:00.000Z');",
+    ])
+  })
+
+  it('keeps alignment when one collection arrives in several chunks', () => {
+    const sql = asSql({ metadataColumns: true, mode: 'data-only' }).encode([
+      metaChunk('notes', [{ text: 'a' }], [{ version: 1, ts: '2026-10-01T00:00:00.000Z' }]),
+      metaChunk('other', [{ text: 'x' }], [{ version: 9, ts: '2026-10-09T00:00:00.000Z' }]),
+      metaChunk('notes', [{ text: 'b' }], [{ version: 2, ts: '2026-10-02T00:00:00.000Z' }]),
+    ]) as string
+    expect(values(sql)).toEqual([
+      "VALUES ('a', 1, '2026-10-01T00:00:00.000Z');",
+      "VALUES ('b', 2, '2026-10-02T00:00:00.000Z');",
+      "VALUES ('x', 9, '2026-10-09T00:00:00.000Z');",
+    ])
+  })
+
+  it('emits NULL when the chunk carries no envelopeMeta', () => {
+    const sql = asSql({ metadataColumns: true, mode: 'data-only' }).encode([metaChunk('notes', [{ text: 'a' }])]) as string
+    expect(values(sql)).toEqual(["VALUES ('a', NULL, NULL);"])
+  })
+
+  it('declares each metadata column once', () => {
+    const sql = asSql({ metadataColumns: true, mode: 'schema-only' }).encode([
+      metaChunk('notes', [{ text: 'a' }], [{ version: 1, ts: '2026-10-01T00:00:00.000Z' }]),
+    ]) as string
+    expect(sql.match(/"_noydb_version"/g)).toHaveLength(1)
+    expect(sql.match(/"_noydb_ts"/g)).toHaveLength(1)
+  })
+
+  // ⚠️ TRIPWIRE, not a spec. At hub 0.10.0-pre.2 the /as port has no
+  // `withEnvelopeMeta` and never asks exportStream for it, so vault.export hands
+  // encode chunks without envelopeMeta. When hub forwards it, this goes red:
+  // flip it to assert the values and wire the option through readOpts.
+  it('vault.export still yields NULL metadata — hub does not forward withEnvelopeMeta yet', async () => {
+    const { vault } = await seed()
+    const sql = await vault.export(asSql({ metadataColumns: true, mode: 'data-only' }), {})
+    expect(values(sql).every((v) => v.endsWith('NULL, NULL);'))).toBe(true)
+  })
+})

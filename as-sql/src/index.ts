@@ -35,8 +35,9 @@ export interface AsSQLOptions {
   readonly tableNames?: (collection: string) => string
   /**
    * Include `_noydb_version` / `_noydb_ts` metadata columns. Default `false`.
-   * ⚠️ The columns are declared but every value is `NULL`: hub's export
-   * records carry no envelope `_v` / `_ts` to fill them from (family#149).
+   * Filled from `ExportChunk.envelopeMeta` when a chunk carries it (family#166).
+   * ⚠️ `vault.export` does not forward `withEnvelopeMeta` at hub 0.10.0-pre.2,
+   * so `download` / `write` still emit `NULL` here until hub does.
    */
   readonly metadataColumns?: boolean
 
@@ -82,15 +83,17 @@ function encodeSql(chunks: readonly ExportChunk[], options: AsSQLFormatOptions =
   const includeAll = !options.include || options.include.length === 0
   const allowlist = options.include ? new Set(options.include) : null
 
-  // Bucket records by collection so we can emit schema+data atomically.
-  const buckets = new Map<string, Record<string, unknown>[]>()
+  // Bucket records by collection so we can emit schema+data atomically. Each
+  // record keeps its own envelope meta beside it: `envelopeMeta[i]` describes
+  // `records[i]` of THIS chunk, and a collection can span several chunks.
+  const buckets = new Map<string, Row[]>()
   for (const chunk of chunks) {
     if (!includeAll && allowlist && !allowlist.has(chunk.collection)) continue
-    const records = chunk.records.map((r: unknown) => stripMeta(r as Record<string, unknown>))
-
-
+    const meta = envelopeMetaOf(chunk)
     const bucket = buckets.get(chunk.collection) ?? []
-    bucket.push(...records)
+    chunk.records.forEach((r: unknown, i: number) => {
+      bucket.push({ record: stripMeta(r as Record<string, unknown>), meta: meta?.[i] })
+    })
     buckets.set(chunk.collection, bucket)
   }
 
@@ -99,16 +102,21 @@ function encodeSql(chunks: readonly ExportChunk[], options: AsSQLFormatOptions =
   parts.push(`-- Bundle snapshot — NOT a live connection. Load with: ${loadCommand(dialect)}`)
   parts.push('')
 
-  for (const [collection, records] of buckets) {
+  for (const [collection, rows] of buckets) {
     const table = tableName(collection)
-    const schema = inferSchema(records, options.metadataColumns === true)
+    const includeMeta = options.metadataColumns === true
+    const records = rows.map((r) => r.record)
+    const schema = inferSchema(records, includeMeta)
     if (mode !== 'data-only') {
       parts.push(createTable(dialect, table, schema))
       parts.push('')
     }
     if (mode !== 'schema-only') {
-      for (const rec of records) {
-        parts.push(insertRow(dialect, table, schema, rec))
+      for (const { record, meta } of rows) {
+        const row = includeMeta
+          ? { ...record, _noydb_version: meta?.version ?? null, _noydb_ts: meta?.ts ?? null }
+          : record
+        parts.push(insertRow(dialect, table, schema, row))
       }
       parts.push('')
     }
@@ -127,8 +135,9 @@ export interface AsSQLFormatOptions {
   readonly tableNames?: (collection: string) => string
   /**
    * Include `_noydb_version` / `_noydb_ts` metadata columns. Default `false`.
-   * ⚠️ The columns are declared but every value is `NULL`: hub's export
-   * records carry no envelope `_v` / `_ts` to fill them from (family#149).
+   * Filled from `ExportChunk.envelopeMeta` when a chunk carries it (family#166).
+   * ⚠️ `vault.export` does not forward `withEnvelopeMeta` at hub 0.10.0-pre.2,
+   * so `download` / `write` still emit `NULL` here until hub does.
    */
   readonly metadataColumns?: boolean
   /**
@@ -196,6 +205,17 @@ export async function write(vault: Vault, path: string, options: AsSQLWriteOptio
 
 
 // ─── SQL formatting internals ───────────────────────────────────────────
+
+interface EnvelopeMeta { readonly version: number; readonly ts: string }
+interface Row { readonly record: Record<string, unknown>; readonly meta: EnvelopeMeta | undefined }
+
+/**
+ * `ExportChunk.envelopeMeta` first ships in hub 0.10.0-pre.2. Read structurally
+ * so the `^0.7.0` peer floor still compiles; absent means NULL columns.
+ */
+function envelopeMetaOf(chunk: ExportChunk): readonly EnvelopeMeta[] | undefined {
+  return (chunk as { readonly envelopeMeta?: readonly EnvelopeMeta[] }).envelopeMeta
+}
 
 type SqlType = 'text' | 'integer' | 'real' | 'boolean' | 'timestamp' | 'jsonb'
 
