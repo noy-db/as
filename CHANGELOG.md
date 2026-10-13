@@ -9,6 +9,39 @@ changelog**: every `files` array is `["dist", "README.md", "LICENSE"]`, so a
 mistake in this file is amendable rather than frozen into a published tarball,
 which is the opposite of hub's situation.
 
+## 0.10.0-pre.2
+
+Ships the family review fixes (family#149–#152, as#30–#33), in the whole-family `0.10.0-pre.2` cut.
+Exact dev pins on `@noy-db/hub` and `@noy-db/ports` move to `0.10.0-pre.2`. `@noy-db/hub` peer ranges
+are untouched: `^0.10.0-pre.0` already admits `0.10.0-pre.2`.
+
+- ⚠️ **`as-ndjson`: `toString` and `download` now go through the format port, so the vault needs
+  `formatsStrategy: withFormats()`** (as#33). Without it they throw `FormatsNotEnabledError`. New:
+  `asNdjson()` (a `NoydbFormat` with `decode`), `write()` (requires `acknowledgeRisks`) and
+  `parseNdjson()`. `stream` and `pipe` stay on `exportStream`, the one off-port path, because they're
+  O(one record).
+- `as-sql`: `inferSchema` walks every record, not just the first 100. Every non-numeric literal is
+  quoted, and MySQL literals double their backslashes (as#30). `metadataColumns` is documented as
+  always NULL until hub exposes per-record version and timestamp (family#166).
+- `as-csv`: a cell starting with `=`, `+`, `-`, `@`, a tab or a CR is prefixed with `'`, and `decode`
+  strips exactly one, so the guard round-trips (as#31).
+- `as-xlsx`: locale keys and data-validation list values can no longer inject markup or formulas
+  (as#31). Smart mode takes record ids from hub (as#32). Multi-vault exports apply `numberFormats`,
+  and the closure filter keys on hub ids (as#33). The reader now reads inline-string cells (as#33).
+  ⭐ The `@noy-db/as-zip` devDependency collapses from the bootstrap append to `^0.10.0-pre.0`,
+  matching the peer. That range admits `0.10.0-pre.2` and resolves to the published `0.10.0-pre.0`
+  meanwhile, so nothing deadlocks.
+- `as-zip`: entry ids come from hub, and `''`, `.` and `..` path segments are written as `_` (as#32).
+- `as-blob`, `as-csv`, `as-json`, `as-noydb`: the claim that exports write an audit-ledger entry is
+  removed, because none is written (family#151, as#32).
+- `as-aws-s3`, `as-xml`: lockstep only, no source change.
+- Tests only, for two hub `0.10.0-pre.2` changes: import plan summaries now carry `skipped`, and
+  the store contract refuses `.` and `..` record ids at `put`. as-zip's traversal test now asserts
+  that refusal, and pins `sanitiseFsSegment` through blob slot names instead. The sanitiser stays,
+  for older hubs in the peer range. Mutation-checked: without it, both slot cases fail.
+- `@noy-db/to-memory` stays at `0.10.0-pre.0`. It is on `to`'s line, and `to` publishes after this
+  cut is opened.
+
 ## 0.10.0-pre.0
 
 **Ten export formats join the 0.10 pre line**, in the whole-family `0.10.0-pre.0` cut. No source change.

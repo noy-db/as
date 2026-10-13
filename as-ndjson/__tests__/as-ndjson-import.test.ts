@@ -75,7 +75,7 @@ describe('as-ndjson fromString', () => {
     ].join('\n')
 
     const importer = await fromString(vault, ndjson, { collection: 'notes' })
-    expect(importer.plan.summary).toEqual({ add: 2, modify: 1, delete: 0, total: 3 })
+    expect(importer.plan.summary).toEqual({ add: 2, modify: 1, delete: 0, skipped: 0, total: 3 })
 
     await importer.apply()
 

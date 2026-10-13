@@ -298,14 +298,23 @@ describe('family#151 — ids come from hub, paths stay inside the archive', () =
     expect(listZipPaths(bytes)).toContain('attachments/n-1/raw')
   })
 
-  it.each(['..', '.'])('a record id of %j never becomes a traversal segment', async (id) => {
+  // Hub refuses these ids itself since 0.10.0-pre.2 (store contract), so a vault
+  // at the dev pin cannot hold one. sanitiseFsSegment still covers older hubs
+  // inside the peer range, and blob slot names, which the case below pins.
+  it.each(['..', '.'])('hub refuses a record id of %j before it can reach an archive', async (id) => {
+    const { db } = await seedVault()
+    const c = (await db.openVault('acme')).collection<{ id: string }>('odd')
+    await expect(c.put(id, { id })).rejects.toMatchObject({ name: 'ValidationError' })
+  })
+
+  it.each(['..', '.'])('a blob slot named %j never becomes a traversal segment', async (slot) => {
     const vault = await exporterWith(async (v) => {
       const c = v.collection<{ id: string }>('odd')
-      await c.put(id, { id })
-      await c.blob(id).put('..', PNG, { mimeType: 'image/png', compress: false })
+      await c.put('r-1', { id: 'r-1' })
+      await c.blob('r-1').put(slot, PNG, { mimeType: 'image/png', compress: false })
     })
     const paths = listZipPaths(await toBytes(vault, { records: { collection: 'odd' } }))
     const attachments = paths.filter((p) => p.startsWith('attachments/'))
-    expect(attachments).toEqual(['attachments/_/_'])
+    expect(attachments).toEqual(['attachments/r-1/_'])
   })
 })

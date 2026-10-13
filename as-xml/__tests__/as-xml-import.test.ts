@@ -100,7 +100,7 @@ describe('as-xml fromString — parse + apply', () => {
         <Invoice><id>b</id><client>Acme &amp; Co.</client><amount>250</amount></Invoice>
       </Records>`
     const importer = await vault.import(asXml({ fieldTypes: { amount: 'number' } }), xml, { collection: 'invoices' })
-    expect(importer.plan.summary).toEqual({ add: 1, modify: 0, delete: 0, total: 1 })
+    expect(importer.plan.summary).toEqual({ add: 1, modify: 0, delete: 0, skipped: 0, total: 1 })
     expect(importer.plan.added[0]!.record).toEqual({ id: 'b', client: 'Acme & Co.', amount: 250 })
 
     await importer.apply()
@@ -185,7 +185,7 @@ describe('as-xml fromString — round-trip', () => {
 
     const importer = await vault.import(asXml({ fieldTypes: { amount: 'number' } }), xml, { collection: 'invoices' })
     // Same source vault → no records should be added/modified/deleted.
-    expect(importer.plan.summary).toEqual({ add: 0, modify: 0, delete: 0, total: 0 })
+    expect(importer.plan.summary).toEqual({ add: 0, modify: 0, delete: 0, skipped: 0, total: 0 })
     db.close()
   })
 })

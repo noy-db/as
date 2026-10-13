@@ -71,7 +71,7 @@ describe('as-xlsx fromBytes — parse + apply', () => {
       },
     ])
     const importer = await fromBytes(vault, xlsx, { collection: 'invoices' })
-    expect(importer.plan.summary).toEqual({ add: 1, modify: 0, delete: 0, total: 1 })
+    expect(importer.plan.summary).toEqual({ add: 1, modify: 0, delete: 0, skipped: 0, total: 1 })
     expect(importer.plan.added[0]!.record).toEqual({ id: 'c', client: 'Z', amount: 300, paid: true })
 
     await importer.apply()
@@ -132,7 +132,7 @@ describe('as-xlsx fromBytes — round-trip', () => {
       sheet: 'invoices',
     })
     // Same source vault → no records should be added/modified/deleted.
-    expect(importer.plan.summary).toEqual({ add: 0, modify: 0, delete: 0, total: 0 })
+    expect(importer.plan.summary).toEqual({ add: 0, modify: 0, delete: 0, skipped: 0, total: 0 })
     db.close()
   })
 })
