@@ -87,7 +87,7 @@ describe('as-json fromString — preview', () => {
     })
 
     const { plan } = await vault.import(asJson(), json, {})
-    expect(plan.summary).toEqual({ add: 1, modify: 1, delete: 0, total: 2 })
+    expect(plan.summary).toEqual({ add: 1, modify: 1, delete: 0, skipped: 0, total: 2 })
     expect(plan.added.map((e) => e.id)).toEqual(['c'])
     expect(plan.modified.map((e) => e.id)).toEqual(['b'])
     db.close()

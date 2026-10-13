@@ -73,7 +73,7 @@ describe('as-csv fromString', () => {
     ].join('\n')
 
     const importer = await vault.import(asCsv({ columnTypes: { amount: 'number' } }), csv, { collection: 'invoices' })
-    expect(importer.plan.summary).toEqual({ add: 1, modify: 0, delete: 0, total: 1 })
+    expect(importer.plan.summary).toEqual({ add: 1, modify: 0, delete: 0, skipped: 0, total: 1 })
     expect(importer.plan.added[0]!.record).toEqual({
       id: 'b', client: 'Acme, Inc.', amount: 250,
     })
