@@ -9,6 +9,16 @@ changelog**: every `files` array is `["dist", "README.md", "LICENSE"]`, so a
 mistake in this file is amendable rather than frozen into a published tarball,
 which is the opposite of hub's situation.
 
+## Unreleased
+
+- `as-sql`: with `metadataColumns: true`, `_noydb_version` / `_noydb_ts` are filled from
+  `ExportChunk.envelopeMeta`, matched to records **by position** within each chunk. They were always
+  NULL before (family#166). The field is read structurally, so the `@noy-db/hub` peer floor stays
+  `^0.7.0`.
+  ⚠️ `vault.export`, and so `download` / `write`, still emit NULL: at hub `0.10.0-pre.2` the `/as`
+  port has no `withEnvelopeMeta` option and never requests it. A tripwire test goes red when hub
+  forwards it.
+
 ## 0.10.0-pre.2
 
 Ships the family review fixes (family#149–#152, as#30–#33), in the whole-family `0.10.0-pre.2` cut.
