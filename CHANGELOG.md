@@ -15,9 +15,9 @@ which is the opposite of hub's situation.
   `ExportChunk.envelopeMeta`, matched to records **by position** within each chunk. They were always
   NULL before (family#166). The field is read structurally, so the `@noy-db/hub` peer floor stays
   `^0.7.0`.
-  ⚠️ `vault.export`, and so `download` / `write`, still emit NULL: at hub `0.10.0-pre.2` the `/as`
-  port has no `withEnvelopeMeta` option and never requests it. A tripwire test goes red when hub
-  forwards it.
+  `download` / `write` pass `withEnvelopeMeta` to `vault.export` when `metadataColumns` is set. A
+  hub whose `/as` port forwards it (noy-db/core#233, after `0.10.0-pre.2`) fills the columns; an
+  older one ignores the key and they stay NULL.
 
 ## 0.10.0-pre.2
 

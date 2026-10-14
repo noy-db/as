@@ -36,8 +36,10 @@ export interface AsSQLOptions {
   /**
    * Include `_noydb_version` / `_noydb_ts` metadata columns. Default `false`.
    * Filled from `ExportChunk.envelopeMeta` when a chunk carries it (family#166).
-   * ⚠️ `vault.export` does not forward `withEnvelopeMeta` at hub 0.10.0-pre.2,
-   * so `download` / `write` still emit `NULL` here until hub does.
+   * `download` / `write` ask hub for it, which costs one store `get` per record
+   * on a scoped export. ⚠️ A hub whose `/as` port does not forward
+   * `withEnvelopeMeta` (0.10.0-pre.2 and older) supplies none, and the columns
+   * are `NULL`.
    */
   readonly metadataColumns?: boolean
 
@@ -136,8 +138,10 @@ export interface AsSQLFormatOptions {
   /**
    * Include `_noydb_version` / `_noydb_ts` metadata columns. Default `false`.
    * Filled from `ExportChunk.envelopeMeta` when a chunk carries it (family#166).
-   * ⚠️ `vault.export` does not forward `withEnvelopeMeta` at hub 0.10.0-pre.2,
-   * so `download` / `write` still emit `NULL` here until hub does.
+   * `download` / `write` ask hub for it, which costs one store `get` per record
+   * on a scoped export. ⚠️ A hub whose `/as` port does not forward
+   * `withEnvelopeMeta` (0.10.0-pre.2 and older) supplies none, and the columns
+   * are `NULL`.
    */
   readonly metadataColumns?: boolean
   /**
@@ -169,6 +173,9 @@ export function asSql(options: AsSQLFormatOptions = {}): NoydbFormat<string> {
 function readOpts(o: AsSQLOptions): FormatExportOptions {
   return {
     ...(o.include ? { collections: o.include } : {}),
+    // Opt-in on purpose: a scoped export pays one store `get` per record for
+    // it (family#166). A hub without the option ignores the key.
+    ...(o.metadataColumns === true ? { withEnvelopeMeta: true } : {}),
     ...(o.redact !== undefined && o.redact !== false
       ? { redact: o.redact === true ? true : { sensitivity: o.redact.sensitivity } }
       : {}),

@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 import type { NoydbStore, EncryptedEnvelope, VaultSnapshot } from '@noy-db/hub'
 import { withFormats } from '@noy-db/hub/as'
 import { ConflictError, ExportCapabilityError, createNoydb } from '@noy-db/hub'
-import { asSql } from '../src/index.js'
+import { asSql, write } from '../src/index.js'
+import { mkdtemp, readFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { withTeam } from '@noy-db/hub/team'
 
 function toMemory(): NoydbStore {
@@ -217,13 +220,21 @@ describe('as-sql — envelope metadata columns (family#166)', () => {
     expect(sql.match(/"_noydb_ts"/g)).toHaveLength(1)
   })
 
-  // ⚠️ TRIPWIRE, not a spec. At hub 0.10.0-pre.2 the /as port has no
-  // `withEnvelopeMeta` and never asks exportStream for it, so vault.export hands
-  // encode chunks without envelopeMeta. When hub forwards it, this goes red:
-  // flip it to assert the values and wire the option through readOpts.
-  it('vault.export still yields NULL metadata — hub does not forward withEnvelopeMeta yet', async () => {
+  // Through `write`, so the option forwarding in `readOpts` is what is tested:
+  // a direct `vault.export(asSql(...))` call would bypass it.
+  it('write() fills metadata from the store envelope (hub forwards withEnvelopeMeta)', async () => {
     const { vault } = await seed()
-    const sql = await vault.export(asSql({ metadataColumns: true, mode: 'data-only' }), {})
-    expect(values(sql).every((v) => v.endsWith('NULL, NULL);'))).toBe(true)
+    const path = join(await mkdtemp(join(tmpdir(), 'as-sql-')), 'out.sql')
+    await write(vault, path, { metadataColumns: true, mode: 'data-only', acknowledgeRisks: true })
+    const rows = values(await readFile(path, 'utf8'))
+    expect(rows).toHaveLength(2)
+    for (const row of rows) expect(row).toMatch(/, 1, '\d{4}-\d{2}-\d{2}T[^']+'\);$/)
+  })
+
+  it('write() without metadataColumns emits no metadata columns', async () => {
+    const { vault } = await seed()
+    const path = join(await mkdtemp(join(tmpdir(), 'as-sql-')), 'out.sql')
+    await write(vault, path, { acknowledgeRisks: true })
+    expect(await readFile(path, 'utf8')).not.toContain('_noydb_version')
   })
 })
